@@ -7,7 +7,8 @@
 #ifndef Card_H
 #define Card_H
 
-#include <string.h>
+#include <string>
+#include <Player.h>
 
 class Card {
 
@@ -15,7 +16,8 @@ class Card {
   string content;
   char type;
   int numOfAnswers;
+  Player owner;
 
-  Card(string c, char t, int n);
-  Card(string c);
+  Card(string c, char t, int n, Player p);
+  Card(string c, Player p);
 }

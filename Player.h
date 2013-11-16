@@ -9,7 +9,9 @@ class Player {
 
  public:
   int socket;
+  int score;
   std::vector<Card> hand;
+  std::vector<Card> winners;
   
   Player(int s);
 }
