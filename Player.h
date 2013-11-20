@@ -1,17 +1,34 @@
 
-#ifndef Player_H
-#define Player_H
+#pragma once
 
-#include "Card.h"
+//#include "Card.h"
 #include <vector>
+
+class Card;
 
 class Player {
 
- public:
-  int socket;
-  int score;
-  std::vector<Card> hand;
-  std::vector<Card> winners;
+ private:
+	char* name;
+	int socket;
+	int score;
+	std::vector<Card> hand;
+	std::vector<Card> winners;
   
-  Player(int s);
-}
+ public:
+	Player();
+	Player(int, char*);
+	
+	int getSocket();
+	int getScore();
+	void setSocket(int sock);
+	void addPoint();
+	void addWinningCard(Card);
+	void addCard(Card);
+	Card takeCard(int);
+	
+	std::vector<Card> getHand();
+	std::vector<Card> getWinners();
+	
+	
+};

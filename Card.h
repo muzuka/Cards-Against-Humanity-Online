@@ -4,20 +4,23 @@
  *
  */
 
-#ifndef Card_H
-#define Card_H
+#pragma once
 
-#include <string>
-#include <Player.h>
+
+#include <string.h>
+//#include "Player.h"
+
+class Player;
 
 class Card {
 
- public:
-  string content;
-  char type;
-  int numOfAnswers;
-  Player owner;
+  public:
+	std::string content;
+	char type;
+	int numOfAnswers;
+	Player *owner;
 
-  Card(string c, char t, int n, Player p);
-  Card(string c, Player p);
-}
+	Card();
+	Card(std::string, char, int, Player);
+	Card(std::string, Player);
+};

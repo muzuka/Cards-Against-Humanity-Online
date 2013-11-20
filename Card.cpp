@@ -2,6 +2,12 @@
 #include <string>
 #include "Card.h"
 
+Card::Card() {
+	content = "";
+	type = '';
+	numOfAnswers = 0;
+}
+
 Card::Card(string c, char t, int n, Player p) {
   content = c;
   type = t;
