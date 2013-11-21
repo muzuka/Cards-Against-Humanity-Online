@@ -1,25 +1,26 @@
 
+#include <string>
 #include <cstring>
 #include "Player.h"
 #include "Card.h"
 
 Player::Player() {
-	name = (char*)"";
+	name = "";
 	socket = 0;
 	score = 0;
 }
 
 Player::Player(int sock) {
-  name = (char*)"";
+  name = "";
   socket = sock;
   score = 0;
 }
 
-char* Player::getName() {
+std::string Player::getName() {
 	return name;
 }
 
-void Player::setName(char* newName) {
+void Player::setName(std::string newName) {
 	name = newName;
 }
 
@@ -54,7 +55,7 @@ Card Player::takeCard(int index) {
 }
 
 bool Player::isEqual(Player p) {
-	if(strcmp(name, p.getName()) == 0) {
+	if(strcmp(name.c_str(), p.getName().c_str()) == 0) {
 		return true;
 	}
 	else {
@@ -64,7 +65,7 @@ bool Player::isEqual(Player p) {
 }
 
 bool Player::isEqual(Player p, Player q) {
-	if(strcmp(p.getName(), q.getName()) == 0) {
+	if(strcmp(p.getName().c_str(), q.getName().c_str()) == 0) {
 		return true;
 	}
 	else {

@@ -24,19 +24,24 @@ using namespace std;
 const int MAXPLAYERS = 10;
 
 // for select Server
-fd_set recvSockSet;
 int maxDesc = 0;
+fd_set recvSockSet;
 bool terminated = false;
 
-vector<Card> blackDeck;
-vector<Card> whiteDeck;
-vector<Card> discard;
-vector<Player> players;
 Player* judge;
 Card* blackCard;
+vector<Card> discard;
+vector<Card> blackDeck;
+vector<Card> whiteDeck;
+vector<Player> players;
+
 
 void initServer(int&, int);
 int countChars(char*, char);
+vector<Card> shuffle(vector<Card>);
+char* composeSENDMessage(char, Card);
+vector<Player> shuffle(vector<Player>);
+char* composeNOTIFYMessage(char, char*);
 void splitString(char**, char*, const char*);
 
 
@@ -49,6 +54,11 @@ int main(int argc, char *argv[]) {
 	struct timeval timeout = {0, 10};
 	struct timeval selectTime;
 	fd_set tempRecvSockSet;
+	
+	blackDeck.clear();
+	whiteDeck.clear();
+	discard.clear();
+	players.clear();
 	
 	if(argc != 4) {
 		printf("Usage: %s <Listening Port> <Black Deck File> <White Deck File>\n", argv[0]);
@@ -74,21 +84,26 @@ int main(int argc, char *argv[]) {
 		char* lineDiv[2];
 		if(line[0] == 'q') {
 			splitString(lineDiv, (char*)line.c_str(), "\"");
-			//Card nBlack(lineDiv[1], 'b', 0);
-			//blackDeck.push_back(nBlack);
+			string temp(lineDiv[1]);
+			Card nBlack(temp, 'b', 0);
+			blackDeck.push_back(nBlack);
 		}
 		else if(line[0] == 's') {
 			splitString(lineDiv, (char*)line.c_str(), "\n");
+			string temp(lineDiv[1]);
 			int answers = countChars(lineDiv[1], '_');
-			Card nBlack(lineDiv[1], 'b', answers);
+			Card nBlack(temp, 'b', answers);
 			blackDeck.push_back(nBlack);
 		}
 	}
 	
 	while (getline(whiteCardReader, line)) {
-		Card nWhite((char*)line.c_str(), 'w', 0);
+		Card nWhite(line, 'w', 0);
 		whiteDeck.push_back(nWhite);
 	}
+	
+	blackDeck = shuffle(blackDeck);
+	whiteDeck = shuffle(whiteDeck);
 	FD_ZERO(&recvSockSet);
 	
 	FD_SET(serverSock, &recvSockSet);
@@ -114,6 +129,8 @@ int main(int argc, char *argv[]) {
 				break;
 			}
 			printf("A new player has connected.\n");
+			
+			
 			
 			FD_SET(clientSock, &recvSockSet);
 			maxDesc = max(maxDesc, clientSock);
@@ -153,6 +170,8 @@ void initServer(int& serverSock, int port) {
   }
 }
 
+// counts instances of a character in a string
+// Ingame: Used to find the number of answers required for statement
 int countChars(char* l, char s) {
 	int elements = 0;
 	for (int i = 0; i < sizeof(l)/sizeof(char); i++) {
@@ -161,6 +180,71 @@ int countChars(char* l, char s) {
 		}
 	}
 	return elements;
+}
+
+// shuffles the elements in the deck
+vector<Card> shuffle(vector<Card> deck) {
+	vector<Card> newDeck;
+	newDeck.clear();
+	
+	for(int i = 0; i < deck.size(); i+=2) {
+		newDeck.push_back(deck[i]);
+	}
+	for (int i = 1; i < deck.size(); i+=2) {
+		newDeck.push_back(deck[i]);
+	}
+	return newDeck;
+}
+
+// composes a message to send, made of the card and source
+/*
+ * messag types: 'p' for post, 'n' for answer, 'd' for add
+ */
+char* composeSENDMessage(char type, Card cardToSend) {
+	if(type == 'p') {
+		return strcat((char*)"POST Server\n", cardToSend.content.c_str());
+	}
+	else if(type == 'n') {
+		return strcat((char*)"ANSWER Server\n", cardToSend.content.c_str());
+	}
+	else if(type == 'd') {
+		return strcat((char*)"ADD Server\n", cardToSend.content.c_str());
+	}
+	else {
+		return NULL;
+	}
+
+}
+
+// shuffles the elements in the deck
+vector<Player> shuffle(vector<Player> deck) {
+	vector<Player> newDeck;
+	newDeck.clear();
+	
+	for(int i = 0; i < deck.size(); i+=2) {
+		newDeck.push_back(deck[i]);
+	}
+	for (int i = 1; i < deck.size(); i+=2) {
+		newDeck.push_back(deck[i]);
+	}
+	return newDeck;
+}
+
+// Composes a message to notify, made of the info to send
+/*
+ *
+ */
+char* composeNOTIFYMessage(char purpose, char* playerName) {
+	if(purpose == 'j') {
+		return strcat((char*)"CP: ", playerName);
+	}
+	else if(purpose == 'w') {
+		return strcat((char*)"winner: ", playerName);
+	}
+	else {
+		return NULL;
+	}
+
 }
 
 // splits the string "target" into the "parts" array by the "delim" characters

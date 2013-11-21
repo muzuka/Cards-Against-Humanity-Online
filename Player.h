@@ -2,13 +2,14 @@
 #pragma once
 
 #include <vector>
+#include <string>
 
 class Card;
 
 class Player {
 
  private:
-	char* name;
+	std::string name;
 	int socket;
 	int score;
 	std::vector<Card> hand;
@@ -18,8 +19,8 @@ class Player {
 	Player();
 	Player(int);
 	
-	char* getName();
-	void setName(char*);
+	std::string getName();
+	void setName(std::string);
 	int getSocket();
 	void setSocket(int);
 	int getScore();
