@@ -51,7 +51,7 @@ int main(int argc, char *argv[]) {
 	fd_set tempRecvSockSet;
 	
 	if(argc != 4) {
-		printf("Usage: %s <Listening Port>\n", argv[0]);
+		printf("Usage: %s <Listening Port> <Black Deck File> <White Deck File>\n", argv[0]);
 		exit(1);
 	}
 	
@@ -59,8 +59,8 @@ int main(int argc, char *argv[]) {
 	
 	string line;
 	ifstream blackCardReader, whiteCardReader;
-	blackCardReader.open(argv[3]);
-	whiteCardReader.open(argv[4]);
+	blackCardReader.open(argv[2]);
+	whiteCardReader.open(argv[3]);
 
 	
 	if(!blackCardReader.is_open() || !whiteCardReader.is_open()) {
@@ -74,8 +74,8 @@ int main(int argc, char *argv[]) {
 		char* lineDiv[2];
 		if(line[0] == 'q') {
 			splitString(lineDiv, (char*)line.c_str(), "\"");
-			Card nBlack(lineDiv[1], 'b', 0);
-			blackDeck.push_back(nBlack);
+			//Card nBlack(lineDiv[1], 'b', 0);
+			//blackDeck.push_back(nBlack);
 		}
 		else if(line[0] == 's') {
 			splitString(lineDiv, (char*)line.c_str(), "\n");

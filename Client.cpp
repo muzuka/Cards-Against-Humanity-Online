@@ -16,8 +16,8 @@
 
 using namespace std;
 
-Player* self = new Player();
-Player* judge = new Player();
+Player self;
+Player judge;
 
 int main(int argc, char* argv[]) {
 	
@@ -25,7 +25,7 @@ int main(int argc, char* argv[]) {
 	struct sockaddr_in serverAddr;
 	
 	if (argc != 3) {
-		printf("Usage: %s <server IP> <Server Port>\n");
+		printf("Usage: %s <server IP> <Server Port>\n", argv[0]);
 		exit(1);
 	}
 	

@@ -4,13 +4,13 @@
 #include "Card.h"
 
 Player::Player() {
-	name = "";
+	name = (char*)"";
 	socket = 0;
 	score = 0;
 }
 
 Player::Player(int sock) {
-  name = "";
+  name = (char*)"";
   socket = sock;
   score = 0;
 }

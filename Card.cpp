@@ -3,7 +3,7 @@
 #include "Player.h"
 
 Card::Card() {
-	content = "";
+	content = (char*)"";
 	type = ' ';
 	numOfAnswers = 0;
 	owner = NULL;
