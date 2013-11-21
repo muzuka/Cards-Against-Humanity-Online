@@ -1,7 +1,6 @@
 
 #pragma once
 
-//#include "Card.h"
 #include <vector>
 
 class Card;
@@ -17,15 +16,19 @@ class Player {
   
  public:
 	Player();
-	Player(int, char*);
+	Player(int);
 	
+	char* getName();
+	void setName(char*);
 	int getSocket();
+	void setSocket(int);
 	int getScore();
-	void setSocket(int sock);
 	void addPoint();
 	void addWinningCard(Card);
 	void addCard(Card);
 	Card takeCard(int);
+	bool isEqual(Player);
+	bool isEqual(Player, Player);
 	
 	std::vector<Card> getHand();
 	std::vector<Card> getWinners();

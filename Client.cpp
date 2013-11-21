@@ -17,6 +17,7 @@
 using namespace std;
 
 Player* self = new Player();
+Player* judge = new Player();
 
 int main(int argc, char* argv[]) {
 	

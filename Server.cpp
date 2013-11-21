@@ -36,6 +36,7 @@ Player* judge;
 Card* blackCard;
 
 void initServer(int&, int);
+int countChars(char*, char);
 void splitString(char**, char*, const char*);
 
 
@@ -58,8 +59,9 @@ int main(int argc, char *argv[]) {
 	
 	string line;
 	ifstream blackCardReader, whiteCardReader;
-	whiteCardReader.open(argv[4]);
 	blackCardReader.open(argv[3]);
+	whiteCardReader.open(argv[4]);
+
 	
 	if(!blackCardReader.is_open() || !whiteCardReader.is_open()) {
 		printf("File open failed\n");
@@ -72,12 +74,21 @@ int main(int argc, char *argv[]) {
 		char* lineDiv[2];
 		if(line[0] == 'q') {
 			splitString(lineDiv, (char*)line.c_str(), "\"");
+			Card nBlack(lineDiv[1], 'b', 0);
+			blackDeck.push_back(nBlack);
 		}
 		else if(line[0] == 's') {
-			
+			splitString(lineDiv, (char*)line.c_str(), "\n");
+			int answers = countChars(lineDiv[1], '_');
+			Card nBlack(lineDiv[1], 'b', answers);
+			blackDeck.push_back(nBlack);
 		}
 	}
 	
+	while (getline(whiteCardReader, line)) {
+		Card nWhite((char*)line.c_str(), 'w', 0);
+		whiteDeck.push_back(nWhite);
+	}
 	FD_ZERO(&recvSockSet);
 	
 	FD_SET(serverSock, &recvSockSet);
@@ -140,6 +151,16 @@ void initServer(int& serverSock, int port) {
     printf("listen() failed\n");
     exit(1);
   }
+}
+
+int countChars(char* l, char s) {
+	int elements = 0;
+	for (int i = 0; i < sizeof(l)/sizeof(char); i++) {
+		if (l[i] == s) {
+			elements++;
+		}
+	}
+	return elements;
 }
 
 // splits the string "target" into the "parts" array by the "delim" characters
