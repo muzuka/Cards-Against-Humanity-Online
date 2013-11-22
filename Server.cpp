@@ -28,8 +28,13 @@ int maxDesc = 0;
 fd_set recvSockSet;
 bool terminated = false;
 
+int step = 1;
 Player* judge;
 Card* blackCard;
+int bytesRecv = 0;
+int bytesSent = 0;
+char inBuffer[200];
+char outBuffer[200];
 vector<Card> discard;
 vector<Card> blackDeck;
 vector<Card> whiteDeck;
@@ -109,8 +114,6 @@ int main(int argc, char *argv[]) {
 	FD_SET(serverSock, &recvSockSet);
 	maxDesc = max(maxDesc, serverSock);
 	
-	//shuffle decks
-	
 	while (!terminated) {
 		
 		memcpy(&tempRecvSockSet, &recvSockSet, sizeof(recvSockSet));
@@ -130,11 +133,62 @@ int main(int argc, char *argv[]) {
 			}
 			printf("A new player has connected.\n");
 			
+			bool nameOK = false;
+			bool foundName = false;
 			
+			while(!nameOK) {
 			
+				bytesRecv = 0;
+				while(bytesRecv <= 0) {
+					bytesRecv = recv(clientSock, (char*)&inBuffer, 20, 0);
+				}
+				printf("%s\n", inBuffer);
+			
+				if(players.size() <= 1) {
+					outBuffer[0] = 'y';
+					bytesSent = send(clientSock, (char*)&outBuffer, 1, 0);
+					nameOK = !nameOK;
+				}
+				else {
+					for(int i = 0; i < players.size(); i++) {
+						if(players[i].getName().compare(inBuffer) == 0) {
+							outBuffer[0] = 'n';
+							bytesSent = 0;
+							bytesSent = send(clientSock, (char*)&outBuffer, 1, 0);
+							foundName = true;
+							break;
+						}
+					}
+					if(foundName) {
+						nameOK = !nameOK;
+					}
+				}
+				printf("Name checks out.\n");
+				string n(inBuffer);
+				Player newPlayer(n, clientSock);
+				players.push_back(newPlayer);
+				
+				printf("About to send Cards.\n");
+				for(int i = 0; i < 10; i++) {
+					
+					bytesSent = 0;
+					char* out = composeSENDMessage('d', whiteDeck[whiteDeck.size()-1]);
+					whiteDeck.pop_back();
+					printf("About to send card.\n");
+					bytesSent = send(clientSock, out, 100, 0);
+					printf("Sent Card.\n");
+				}
+				
+			}
 			FD_SET(clientSock, &recvSockSet);
 			maxDesc = max(maxDesc, clientSock);
 		}
+		else {
+			if(players.size() > 2) {
+				
+			}
+		}
+
 	}
 }
 

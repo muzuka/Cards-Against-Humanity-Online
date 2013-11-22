@@ -1,6 +1,7 @@
 
 #include <cstring>
 #include <string>
+#include <stdio.h>
 #include "Card.h"
 #include "Player.h"
 
@@ -30,6 +31,10 @@ Card::Card(std::string c, Player p) {
 	type = 'w';
 	numOfAnswers = 0;
 	owner = &p;
+}
+
+void Card::print() {
+	printf("%s\n", content.c_str());
 }
 
 std::string Card::toString() {

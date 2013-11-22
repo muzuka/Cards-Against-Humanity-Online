@@ -11,9 +11,15 @@ Player::Player() {
 }
 
 Player::Player(int sock) {
-  name = "";
-  socket = sock;
-  score = 0;
+	name = "";
+	socket = sock;
+	score = 0;
+}
+
+Player::Player(std::string newName, int sock) {
+	name = newName;
+	socket = sock;
+	score = 0;
 }
 
 std::string Player::getName() {

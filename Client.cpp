@@ -21,6 +21,10 @@ bool isDone = false;
 
 Player self;
 Player judge;
+int bytesRecv = 0;
+int bytesSent = 0;
+char inBuffer[200];
+char outBuffer[200];
 
 void openMenu();
 char* composeSENDMessage(char, Card);
@@ -68,10 +72,32 @@ int main(int argc, char* argv[]) {
 	}
 	printf("Connected to Server successfully.\n");
 	bool isReady = false;
+	send(self.getSocket(), self.getName().c_str(), self.getName().length(), 0);
 	while (!isReady) {
-		send(self.getSocket(), self.getName().c_str(), self.getName().length(), 0);
+
+		bytesRecv = 0;
+		while(bytesRecv <= 0) {
+			bytesRecv = recv(self.getSocket(), (char*)&outBuffer, 1, 0);
+		}
+		if (outBuffer[0] == 'y') {
+			break;
+		}
+		else if(outBuffer[0] == 'n'){
+			printf("The name was already taken, please enter another:\n");
+			cin >> name;
+			self.setName(name);
+		}
 		
+	}
+	printf("The name was accepted!\n");
+	
+	for (int i = 0; i < 10; i++) {
 		
+		bytesRecv = 0;
+		while(bytesRecv <= 0) {
+			bytesRecv = recv(self.getSocket(), (char*)&inBuffer, 100, 0);
+		}
+		printf("Got a card.\n");
 	}
 	
 	while(!isDone) {
@@ -84,14 +110,21 @@ int main(int argc, char* argv[]) {
  * messag types: 'p' for post, 'n' for answer, 'd' for add
  */
 char* composeSENDMessage(char type, Card cardToSend) {
+	char* t;
 	if(type == 'p') {
-		return strcat((char*)"POST Server\n", cardToSend.content.c_str());
+		t = strcat((char*)"POST ", self.getName().c_str());
+		t = strcat(t, "\n");
+		return strcat(t, cardToSend.content.c_str());
 	}
 	else if(type == 'n') {
-		return strcat((char*)"ANSWER Server\n", cardToSend.content.c_str());
+		t = strcat((char*)"ANSWER ", self.getName().c_str());
+		t = strcat(t, "\n");
+		return strcat(t, cardToSend.content.c_str());
 	}
 	else if(type == 'd') {
-		return strcat((char*)"ADD Server\n", cardToSend.content.c_str());
+		t = strcat((char*)"ADD ", self.getName().c_str());
+		t = strcat(t, "\n");
+		return strcat(t, cardToSend.content.c_str());
 	}
 	else {
 		return NULL;

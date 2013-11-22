@@ -23,5 +23,6 @@ class Card {
 	Card(std::string, char, int);
 	Card(std::string, Player);
 	
+	void print();
 	std::string toString();
 };
