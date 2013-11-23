@@ -44,9 +44,9 @@ vector<Player> players;
 void initServer(int&, int);
 int countChars(char*, char);
 vector<Card> shuffle(vector<Card>);
-char* composeSENDMessage(char, Card);
+string composeSENDMessage(char, Card);
 vector<Player> shuffle(vector<Player>);
-char* composeNOTIFYMessage(char, char*);
+string composeNOTIFYMessage(char, string);
 void splitString(char**, char*, const char*);
 
 
@@ -172,10 +172,10 @@ int main(int argc, char *argv[]) {
 				for(int i = 0; i < 10; i++) {
 					
 					bytesSent = 0;
-					char* out = composeSENDMessage('d', whiteDeck[whiteDeck.size()-1]);
+					string out = composeSENDMessage('d', whiteDeck[whiteDeck.size()-1]);
 					whiteDeck.pop_back();
 					printf("About to send card.\n");
-					bytesSent = send(clientSock, out, 100, 0);
+					bytesSent = send(clientSock, (char*)out.c_str(), 100, 0);
 					printf("Sent Card.\n");
 				}
 				
@@ -254,18 +254,21 @@ vector<Card> shuffle(vector<Card> deck) {
 /*
  * messag types: 'p' for post, 'n' for answer, 'd' for add
  */
-char* composeSENDMessage(char type, Card cardToSend) {
+string composeSENDMessage(char type, Card cardToSend) {
 	if(type == 'p') {
-		return strcat((char*)"POST Server\n", cardToSend.content.c_str());
+		//return strcat((char*)"POST Server\n", cardToSend.content.c_str());
+		return "POST Server\n" + cardToSend.content;
 	}
 	else if(type == 'n') {
-		return strcat((char*)"ANSWER Server\n", cardToSend.content.c_str());
+		//return strcat((char*)"ANSWER Server\n", cardToSend.content.c_str());
+		return "ANSWER Server\n" + cardToSend.content;
 	}
 	else if(type == 'd') {
-		return strcat((char*)"ADD Server\n", cardToSend.content.c_str());
+		//return strcat((char*)"ADD Server\n", cardToSend.content.c_str());
+		return "ADD Server\n" + cardToSend.content;
 	}
 	else {
-		return NULL;
+		return "";
 	}
 
 }
@@ -288,15 +291,17 @@ vector<Player> shuffle(vector<Player> deck) {
 /*
  *
  */
-char* composeNOTIFYMessage(char purpose, char* playerName) {
+string composeNOTIFYMessage(char purpose, string playerName) {
 	if(purpose == 'j') {
-		return strcat((char*)"CP: ", playerName);
+		//return strcat((char*)"CP: ", playerName);
+		return "CP: " + playerName;
 	}
 	else if(purpose == 'w') {
-		return strcat((char*)"winner: ", playerName);
+		//return strcat((char*)"winner: ", playerName);
+		return "winner: " + playerName;
 	}
 	else {
-		return NULL;
+		return "";
 	}
 
 }

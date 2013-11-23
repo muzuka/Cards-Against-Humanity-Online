@@ -10,6 +10,7 @@
 #include <iostream>
 #include <stdlib.h>
 #include <stdio.h>
+#include <string>
 #include <string.h>
 #include <unistd.h>
 #include "Card.h"
@@ -27,8 +28,8 @@ char inBuffer[200];
 char outBuffer[200];
 
 void openMenu();
-char* composeSENDMessage(char, Card);
-char* composeNOTIFYMessage(char, char*);
+string composeSENDMessage(char, Card);
+string composeNOTIFYMessage(char, string);
 
 int main(int argc, char* argv[]) {
 	
@@ -109,25 +110,28 @@ int main(int argc, char* argv[]) {
 /*
  * messag types: 'p' for post, 'n' for answer, 'd' for add
  */
-char* composeSENDMessage(char type, Card cardToSend) {
+string composeSENDMessage(char type, Card cardToSend) {
 	char* t;
 	if(type == 'p') {
-		t = strcat((char*)"POST ", self.getName().c_str());
+		/*t = strcat((char*)"POST ", self.getName().c_str());
 		t = strcat(t, "\n");
-		return strcat(t, cardToSend.content.c_str());
+		return strcat(t, cardToSend.content.c_str());*/
+		return "POST " + self.getName() + "\n" + cardToSend.content;
 	}
 	else if(type == 'n') {
-		t = strcat((char*)"ANSWER ", self.getName().c_str());
+		/*t = strcat((char*)"ANSWER ", self.getName().c_str());
 		t = strcat(t, "\n");
-		return strcat(t, cardToSend.content.c_str());
+		return strcat(t, cardToSend.content.c_str());*/
+		return "ANSWER " + self.getName() + "\n" + cardToSend.content;
 	}
 	else if(type == 'd') {
-		t = strcat((char*)"ADD ", self.getName().c_str());
+		/*t = strcat((char*)"ADD ", self.getName().c_str());
 		t = strcat(t, "\n");
-		return strcat(t, cardToSend.content.c_str());
+		return strcat(t, cardToSend.content.c_str());*/
+		return "ADD " + self.getName() + "\n" + cardToSend.content;
 	}
 	else {
-		return NULL;
+		return "";
 	}
 	
 }
@@ -136,15 +140,17 @@ char* composeSENDMessage(char type, Card cardToSend) {
 /*
  *
  */
-char* composeNOTIFYMessage(char purpose, char* playerName) {
+string composeNOTIFYMessage(char purpose, string playerName) {
 	if(purpose == 'j') {
-		return strcat((char*)"CP: ", playerName);
+		//return strcat((char*)"CP: ", playerName);
+		return "CP: " + playerName;
 	}
 	else if(purpose == 'w') {
-		return strcat((char*)"winner: ", playerName);
+		//return strcat((char*)"winner: ", playerName);
+		return "winner: " + playerName;
 	}
 	else {
-		return NULL;
+		return "";
 	}
 	
 }
