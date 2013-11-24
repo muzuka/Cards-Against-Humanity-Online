@@ -150,13 +150,20 @@ int main(int argc, char* argv[]) {
 	}
 }
 
+// prints vector of cards
 void printHand(vector<Card> hand) {
 	for (int i = 0; i < hand.size(); i++) {
-		printf("%s\n", hand[i].content.c_str());
+		printf("%d %s\n", i+1, hand[i].content.c_str());
 	}
 }
 
-// Given a string, it parses and does the action required by the message.
+// Given a string, parseMessage parses it and does the action required by the message.
+/*
+ * ADD: adds to hand
+ * POST: replaces black card
+ * ANSWER: adds card to answers
+ * NOTIFY: updates newest judge or winner
+ */
 void parseMessage(string message) {
 	char* notifyMessage[2];
 	char* messageDiv[2];
@@ -166,13 +173,13 @@ void parseMessage(string message) {
 	
 	if(strcmp((const char*)getCommand[0], "ADD") == 0) {
 		//printf("Got an ADD message.\n");
-		self.addCard(Card(string(messageDiv[1]), 'w', 0, self));
+		self.addCard(Card(string(messageDiv[1]), self));
 	}
 	else if(strcmp((const char*)getCommand[0], "POST") == 0) {
 		blackCard = Card(string(messageDiv[1]), 'b', countChars(messageDiv[1], '_'));
 	}
 	else if(strcmp((const char*)getCommand[0], "ANSWER") == 0) {
-		answers.push_back(Card(string(messageDiv[1]), 'w', 0, Player(string(getCommand[1]), 0)));
+		answers.push_back(Card(string(messageDiv[1]), Player(string(getCommand[1]), 0)));
 	}
 	else if(strcmp((const char*)getCommand[0], "NOTIFY") == 0) {
 		splitString(notifyMessage, messageDiv[1], " ");
@@ -227,9 +234,6 @@ string composeSENDMessage(char type, Card cardToSend) {
 }
 
 // Composes a message to notify, made of the info to send
-/*
- *
- */
 string composeNOTIFYMessage(char purpose, string playerName) {
 	if(purpose == 'j') {
 		//return strcat((char*)"CP: ", playerName);
