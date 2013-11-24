@@ -29,8 +29,8 @@ fd_set recvSockSet;
 bool terminated = false;
 
 int step = 1;
-Player* judge;
-Card* blackCard;
+Player judge;
+Card blackCard;
 int bytesRecv = 0;
 int bytesSent = 0;
 char inBuffer[200];
@@ -147,6 +147,10 @@ int main(int argc, char *argv[]) {
 				if(players.size() <= 1) {
 					outBuffer[0] = 'y';
 					bytesSent = send(clientSock, (char*)&outBuffer, 1, 0);
+					if(bytesSent <= 0) {
+						printf("Couldn't send confirmation.\n");
+						exit(1);
+					}
 					nameOK = !nameOK;
 				}
 				else {
@@ -155,6 +159,10 @@ int main(int argc, char *argv[]) {
 							outBuffer[0] = 'n';
 							bytesSent = 0;
 							bytesSent = send(clientSock, (char*)&outBuffer, 1, 0);
+							if(bytesSent <= 0) {
+								printf("Couldn't send denial.\n");
+								exit(1);
+							}
 							foundName = true;
 							break;
 						}
@@ -176,6 +184,10 @@ int main(int argc, char *argv[]) {
 					whiteDeck.pop_back();
 					printf("About to send card.\n");
 					bytesSent = send(clientSock, (char*)out.c_str(), 100, 0);
+					if(bytesSent <= 0) {
+						printf("No Card was sent.\n");
+						exit(1);
+					}
 					printf("Sent Card.\n");
 				}
 				
@@ -185,7 +197,42 @@ int main(int argc, char *argv[]) {
 		}
 		else {
 			if(players.size() > 2) {
-				
+				string message;
+				switch (step % 6) {
+					case 1:
+						players = shuffle(players);
+						judge = players[0];
+						
+						message = composeNOTIFYMessage('j', judge.getName());
+						for(int i = 0; i < players.size(); i++) {
+							bytesSent = send(players[i].getSocket(), (char*)message.c_str(), 100, 0);
+							if(bytesSent <= 0) {
+								printf("Judge message couldn't be sent.\n");
+								exit(1);
+							}
+						}
+						blackCard = blackDeck[blackDeck.size() - 1];
+						blackDeck.pop_back();
+						
+						message = composeSENDMessage('p', blackCard);
+						for (int i = 0; i < players.size(); i++) {
+							bytesSent = send(players[i].getSocket(), (char*)message.c_str(), 100, 0);
+							if(bytesSent <= 0) {
+								printf("Couldn't post black card.\n");
+								exit(1);
+							}
+						}
+						step++;
+						break;
+					case 2:
+						
+						break;
+					case 3:
+						
+						break;
+					default:
+						break;
+				}
 			}
 		}
 
@@ -294,11 +341,11 @@ vector<Player> shuffle(vector<Player> deck) {
 string composeNOTIFYMessage(char purpose, string playerName) {
 	if(purpose == 'j') {
 		//return strcat((char*)"CP: ", playerName);
-		return "CP: " + playerName;
+		return "NOTIFY Server\nCP: " + playerName;
 	}
 	else if(purpose == 'w') {
 		//return strcat((char*)"winner: ", playerName);
-		return "winner: " + playerName;
+		return "NOTIFY Server\nwinner: " + playerName;
 	}
 	else {
 		return "";
