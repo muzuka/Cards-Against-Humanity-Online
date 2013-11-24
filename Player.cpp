@@ -1,3 +1,14 @@
+/*
+ *	Player class implementation
+ *
+ *	Written by: Sean Brown
+ *  UCID: 10062604
+ *
+ *	Version 1.0
+ *
+ *	All features needed have been implemented
+ *
+ */
 
 #include <string>
 #include <cstring>

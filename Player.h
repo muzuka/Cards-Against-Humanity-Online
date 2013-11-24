@@ -1,3 +1,13 @@
+/*
+ *	Player class header file
+ *	
+ *	Written by: Sean Brown
+ *	UCID: 10062604
+ *	
+ *	Version 1.0
+ *
+ *	All needed features implemented
+ */
 
 #pragma once
 

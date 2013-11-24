@@ -1,7 +1,17 @@
 /*
  *  The client acts as the player in the game.
  *  
- *
+ *  Written by: Sean Brown
+ *	UCID: 10062604
+ *  
+ *  Features:
+ *		+ Send messages to server
+ *		+ Can get an appropriate name from server
+ *		+ Receives messages from server
+ *		+ Basic player and client communication possible
+ *		+ Step 1 of the game
+ *	To be implemented:
+ *		- Steps 2-6 of the game from the client's perspective
  *
  */
 
@@ -31,7 +41,6 @@ char outBuffer[200];
 vector<Card> answers;
 
 void printHand(vector<Card>);
-void printMessage(int);
 void parseMessage(string);
 string composeSENDMessage(char, Card);
 string composeNOTIFYMessage(char, string);
@@ -49,7 +58,9 @@ int main(int argc, char* argv[]) {
 	}
 	
 	string name;
-	printMessage(0);
+	printf("Welcome to Cards Against Humanity Online!\n");
+	printf("Experience all of the hilarious and bad humour of the real thing.\n");
+	printf("What do you want as a username:\n");
 	cin >> name;
 	self.setName(name);
 	printf("Please wait until you have connected.\n");
@@ -145,21 +156,6 @@ void printHand(vector<Card> hand) {
 	}
 }
 
-void printMessage(int message) {
-	switch (message) {
-		case 0:
-			printf("Welcome to Cards Against Humanity Online!\n");
-			printf("Experience all of the hilarious and bad humour of the real thing.\n");
-			printf("What do you want as a username:\n");
-			break;
-		case 1:
-			
-			break;
-		default:
-			break;
-	}
-}
-
 // Given a string, it parses and does the action required by the message.
 void parseMessage(string message) {
 	char* notifyMessage[2];
@@ -184,13 +180,18 @@ void parseMessage(string message) {
 			if (strcmp(self.getName().c_str(), (const char*)notifyMessage[1]) == 0) {
 				isJudge = !isJudge;
 				judge = self;
+				printf("You are the new judge!\n");
 			}
 			else {
 				judge.setName(string(notifyMessage[1]));
+				printf("The new judge is %s.\n", notifyMessage[1]);
 			}
 		}
 		else if(strcmp((const char*)notifyMessage[0], "winner:") == 0) {
-			
+			if(strcmp(self.getName().c_str(), (const char*)notifyMessage[1]) == 0) {
+				printf("You have won this round!\n");
+				self.addPoint();
+			}
 		}
 	}
 }

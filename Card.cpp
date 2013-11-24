@@ -1,4 +1,16 @@
 
+/*
+ *	Implementation of Card.h
+ *	
+ *	Written by: Sean Brown
+ *	UCID: 10062604
+ *
+ *	Version 1.0
+ *
+ *	Features:
+ *		+ All needed features have been finished
+ */
+
 #include <cstring>
 #include <string>
 #include <stdio.h>

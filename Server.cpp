@@ -1,8 +1,18 @@
 
 /*
- * The server implementation of Cards Against Humanity
- * This handles communication between clients and runs the game.
- * Usage: 
+ *	The server implementation of Cards Against Humanity
+ *	This handles communication between clients and runs the game.
+ * 
+ *	Written by: Sean Brown
+ *	UCID: 10062604
+ *
+ *	Features:
+ *		+ Accepts any client connection
+ *		+ Sends messages to clients
+ *		+ Can receive messages from client
+ *		+ Implements Step 1 of the game
+ *	Features:
+ *		- Steps 2-6 to be implemented
  *
  */
 

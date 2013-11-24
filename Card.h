@@ -1,7 +1,14 @@
 
 /*
- * Card class header file
+ *	Card class header file
  *
+ *	Written by: Sean Brown
+ *	UCID:  10062604
+ *
+ *	Version 1.0
+ *
+ *	Features:
+ *		+ contains contents, type of card, # of answers, owner
  */
 
 #pragma once
