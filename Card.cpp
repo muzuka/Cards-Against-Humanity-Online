@@ -17,6 +17,7 @@
 #include "Card.h"
 #include "Player.h"
 
+// basic constructor
 Card::Card() {
 	content = "";
 	type = ' ';
@@ -24,6 +25,7 @@ Card::Card() {
 	owner = NULL;
 }
 
+// complete constructor
 Card::Card(std::string c, char t, int n, Player p) {
 	content = c;
 	type = t;
@@ -31,6 +33,7 @@ Card::Card(std::string c, char t, int n, Player p) {
 	owner = &p;
 }
 
+// complete constructor
 Card::Card(std::string c, char t, int n) {
 	content = c;
 	type = t;
@@ -38,6 +41,7 @@ Card::Card(std::string c, char t, int n) {
 	owner = NULL;
 }
 
+// quick white card constructor
 Card::Card(std::string c, Player p) {
 	content = c;
 	type = 'w';
