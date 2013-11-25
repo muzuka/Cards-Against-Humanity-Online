@@ -150,15 +150,18 @@ int main(int argc, char *argv[]) {
 			bool foundName = false;
 			
 			while (!nameOK) {
-			
+				
+				memset(&inBuffer, 0, sizeof(inBuffer));
 				bytesRecv = 0;
 				while (bytesRecv <= 0) {
 					bytesRecv = recv(clientSock, (char*)&inBuffer, 20, 0);
 				}
 				printf("%s\n", inBuffer);
 			
-				if (players.size() <= 1) {
+				if (players.size() < 1) {
+					printf("Players is Empty.\n");
 					outBuffer[0] = 'y';
+					printf("Name hasn't been taken.\n");
 					bytesSent = send(clientSock, (char*)&outBuffer, 1, 0);
 					if (bytesSent <= 0) {
 						printf("Couldn't send confirmation.\n");
@@ -167,10 +170,12 @@ int main(int argc, char *argv[]) {
 					nameOK = !nameOK;
 				}
 				else {
+					printf("Players isn't empty.\n");
 					for (int i = 0; i < players.size(); i++) {
 						if (players[i].getName().compare(inBuffer) == 0) {
 							outBuffer[0] = 'n';
 							bytesSent = 0;
+							printf("Name is already taken.\n");
 							bytesSent = send(clientSock, (char*)&outBuffer, 1, 0);
 							if (bytesSent <= 0) {
 								printf("Couldn't send denial.\n");
@@ -180,40 +185,51 @@ int main(int argc, char *argv[]) {
 							break;
 						}
 					}
-					if (foundName) {
+					if (!foundName) {
+						outBuffer[0] = 'y';
+						printf("Name hasn't been taken.\n");
+						bytesSent = send(clientSock, (char*)&outBuffer, 1, 0);
+						if (bytesSent <= 0) {
+							printf("Couldn't send confirmation.\n");
+							exit(1);
+						}
 						nameOK = !nameOK;
 					}
 				}
-				printf("Name checks out.\n");
-				string n(inBuffer);
-				Player newPlayer(n, clientSock);
-				players.push_back(newPlayer);
-				
-				printf("About to send Cards.\n");
-				for (int i = 0; i < 10; i++) {
-					
-					bytesSent = 0;
-					string out = composeSENDMessage('d', whiteDeck[whiteDeck.size()-1]);
-					whiteDeck.pop_back();
-					bytesSent = send(clientSock, (char*)out.c_str(), 100, 0);
-					if (bytesSent <= 0) {
-						printf("No Card was sent.\n");
-						exit(1);
-					}
-					printf("Sent Card.\n");
-				}
-				
 			}
+			printf("Name checks out.\n");
+			string n(inBuffer);
+			Player newPlayer(n, clientSock);
+			players.push_back(newPlayer);
+				
+			printf("About to send Cards.\n");
+			for (int i = 0; i < 10; i++) {
+					
+				bytesSent = 0;
+				string out = composeSENDMessage('d', whiteDeck[whiteDeck.size()-1]);
+				whiteDeck.pop_back();
+				bytesSent = send(clientSock, (char*)out.c_str(), 100, 0);
+				if (bytesSent <= 0) {
+					printf("No Card was sent.\n");
+					exit(1);
+				}
+				printf("Sent Card.\n");
+			}
+
 			FD_SET(clientSock, &recvSockSet);
 			maxDesc = max(maxDesc, clientSock);
 		}
 		else {
 			if(players.size() > 2) {
+				if (step < 6) {
+					printf("The game has begun!\n");
+				}
 				string message;
 				vector<Card> answers;
 				switch (step % 6) {
 					// Choose judge and NOTIFY the others
 					case 1:
+						printf("Choosing a judge.\n");
 						players = shuffle(players, atoi(argv[1]));
 						judge = players[0];
 						
@@ -230,6 +246,7 @@ int main(int argc, char *argv[]) {
 						break;
 					// choose black card and POST it
 					case 2:
+						printf("Choosing a black card.\n");
 						blackCard = blackDeck[blackDeck.size() - 1];
 						blackDeck.pop_back();
 						

@@ -89,17 +89,25 @@ int main(int argc, char* argv[]) {
 	}
 	printf("Connected to Server successfully.\n");
 	bool isReady = false;
-	send(self.getSocket(), self.getName().c_str(), self.getName().length(), 0);
+	bytesSent = send(self.getSocket(), self.getName().c_str(), self.getName().length(), 0);
+	if (bytesSent <= 0) {
+		printf("Couldn't send name.\n");
+		exit(1);
+	}
+	
+	// while sent name isn't available
 	while(!isReady) {
-
+		//memset(&inBuffer, 0, sizeof(inBuffer));
 		bytesRecv = 0;
 		while(bytesRecv <= 0) {
-			bytesRecv = recv(self.getSocket(), (char*)&outBuffer, 1, 0);
+			// receive confirmation
+			bytesRecv = recv(self.getSocket(), (char*)&inBuffer, 1, 0);
 		}
-		if (outBuffer[0] == 'y') {
+		printf("Received answer from Server: %s\n", (char*)inBuffer);
+		if (inBuffer[0] == 'y') {
 			break;
 		}
-		else if(outBuffer[0] == 'n'){
+		else if(inBuffer[0] == 'n'){
 			printf("The name was already taken, please enter another:\n");
 			cin >> name;
 			self.setName(name);
@@ -107,41 +115,44 @@ int main(int argc, char* argv[]) {
 		
 	}
 	printf("The name was accepted!\n");
-	
+	// Receive cards
 	for(int i = 0; i < 10; i++) {
-		
+		memset(&inBuffer, 0, sizeof(inBuffer));
 		bytesRecv = 0;
 		while(bytesRecv <= 0) {
 			bytesRecv = recv(self.getSocket(), (char*)&inBuffer, 100, 0);
 		}
 		parseMessage(string(inBuffer));
-		printf("Got a card.\n");
 	}
 	
 	if(self.getHand().empty()) {
 		 printf("Hand is empty.\n");
 	}
 	else {
+		printf("This is your current hand.\nPlease enter the number to choose one when prompted.\n");
 		printHand(self.getHand());
 	}
+	// Start main loop
 	while(!isDone) {
 		
+		memset(&inBuffer, 0, sizeof(inBuffer));
+		// receive NOTIFY for new judge
 		bytesRecv = 0;
 		while(bytesRecv <= 0) {
 			bytesRecv = recv(self.getSocket(), (char*)&inBuffer, 100, 0);
 		}
 		parseMessage(string(inBuffer));
 		
+		memset(&inBuffer, 0, sizeof(inBuffer));
+		// receive POST for new black card
 		bytesRecv = 0;
 		while(bytesRecv <= 0) {
 			bytesRecv = recv(self.getSocket(), (char*)&inBuffer, 100, 0);
 		}
 		parseMessage(string(inBuffer));
-		
-		
 		
 		if(isJudge) {
-			
+			printf("Please wait for the answers.\n");
 		}
 		else {
 			
@@ -165,18 +176,20 @@ void printHand(vector<Card> hand) {
  * NOTIFY: updates newest judge or winner
  */
 void parseMessage(string message) {
-	char* notifyMessage[2];
-	char* messageDiv[2];
-	char* getCommand[2];
+	char* notifyMessage[2]; // [0] has option, [1] has name
+	char* messageDiv[2]; // [0] has first half, [1] has content
+	char* getCommand[2]; // [0] has command, [1] has source
 	splitString(messageDiv, (char*)message.c_str(), "\n");
 	splitString(getCommand, messageDiv[0], " ");
 	
 	if(strcmp((const char*)getCommand[0], "ADD") == 0) {
 		//printf("Got an ADD message.\n");
 		self.addCard(Card(string(messageDiv[1]), self));
+		printf("Got a new card.\n");
 	}
 	else if(strcmp((const char*)getCommand[0], "POST") == 0) {
 		blackCard = Card(string(messageDiv[1]), 'b', countChars(messageDiv[1], '_'));
+		printf("Received a new black card:\n\"%s\"\n", messageDiv[1]);
 	}
 	else if(strcmp((const char*)getCommand[0], "ANSWER") == 0) {
 		answers.push_back(Card(string(messageDiv[1]), Player(string(getCommand[1]), 0)));
@@ -209,13 +222,7 @@ void parseMessage(string message) {
  */
 string composeSENDMessage(char type, Card cardToSend) {
 	char* t;
-	if(type == 'p') {
-		/*t = strcat((char*)"POST ", self.getName().c_str());
-		t = strcat(t, "\n");
-		return strcat(t, cardToSend.content.c_str());*/
-		return "POST " + self.getName() + "\n" + cardToSend.content;
-	}
-	else if(type == 'n') {
+	if(type == 'n') {
 		/*t = strcat((char*)"ANSWER ", self.getName().c_str());
 		t = strcat(t, "\n");
 		return strcat(t, cardToSend.content.c_str());*/
@@ -231,6 +238,10 @@ string composeSENDMessage(char type, Card cardToSend) {
 		return "";
 	}
 	
+}
+
+string composeREQUESTMessage() {
+	return "REQUEST " + self.getName() + "\n";
 }
 
 // Composes a message to notify, made of the info to send
