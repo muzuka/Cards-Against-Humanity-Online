@@ -10,10 +10,10 @@
  *
  */
 
-#include <string>
-#include <cstring>
 #include "Player.h"
 #include "Card.h"
+
+std::vector<Card> deleteCard(std::vector<Card>, int);
 
 Player::Player() {
 	name = "";
@@ -67,7 +67,7 @@ void Player::addCard(Card newCard) {
 
 Card Player::takeCard(int index) {
 	Card temp = hand[index];
-	hand.erase(hand.begin()+index);
+	hand = deleteCard(hand, index);
 	return temp;
 }
 
@@ -96,4 +96,15 @@ std::vector<Card> Player::getHand() {
 
 std::vector<Card> Player::getWinners() {
 	return winners;
+}
+
+// Deletes a card from the vector by index
+std::vector<Card> deleteCard(std::vector<Card> cards, int index) {
+	std::vector<Card> temp;
+	for (int i = 0; i < (int)cards.size(); i++) {
+		if (i != index) {
+			temp.push_back(cards[i]);
+		}
+	}
+	return temp;
 }

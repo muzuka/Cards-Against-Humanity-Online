@@ -13,6 +13,7 @@
 
 #include <vector>
 #include <string>
+#include <cstring>
 
 class Card;
 

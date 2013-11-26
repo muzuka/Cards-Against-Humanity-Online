@@ -10,14 +10,15 @@
  *		+ Accepts any client connection
  *		+ Sends messages to clients
  *		+ Can receive messages from client
- *		+ Implements Step 1 of the game
+ *		+ Implements Step 1-3 of the game
  *	Features:
- *		- Steps 2-6 to be implemented
+ *		- Steps 4-6 to be implemented
  *
  */
 
 #include <sys/socket.h>
 #include <arpa/inet.h>
+#include <sstream>
 #include <fstream>
 #include <vector>
 #include <string>
@@ -45,6 +46,7 @@ int bytesRecv = 0;
 int bytesSent = 0;
 char inBuffer[200];
 char outBuffer[200];
+vector<Card> answers;
 vector<Card> discard;
 vector<Card> blackDeck;
 vector<Card> whiteDeck;
@@ -107,7 +109,7 @@ int main(int argc, char *argv[]) {
 			blackDeck.push_back(nBlack);
 		}
 		else if (line[0] == 's') {
-			splitString(lineDiv, (char*)line.c_str(), "\n");
+			splitString(lineDiv, (char*)line.c_str(), "\"");
 			string temp(lineDiv[1]);
 			int answers = countChars(lineDiv[1], '_');
 			Card nBlack(temp, 'b', answers);
@@ -213,7 +215,6 @@ int main(int argc, char *argv[]) {
 					printf("No Card was sent.\n");
 					exit(1);
 				}
-				printf("Sent Card.\n");
 			}
 
 			FD_SET(clientSock, &recvSockSet);
@@ -221,11 +222,7 @@ int main(int argc, char *argv[]) {
 		}
 		else {
 			if(players.size() > 2) {
-				if (step < 6) {
-					printf("The game has begun!\n");
-				}
 				string message;
-				vector<Card> answers;
 				switch (step % 6) {
 					// Choose judge and NOTIFY the others
 					case 1:
@@ -261,7 +258,8 @@ int main(int argc, char *argv[]) {
 						step++;
 						break;
 					case 3:
-						
+						answers.clear();
+						// Receive answers from others
 						for (int i = 1; i < players.size(); i++) {
 							
 							bytesRecv = 0;
@@ -270,7 +268,14 @@ int main(int argc, char *argv[]) {
 							}
 							parseAnswer(string(inBuffer), answers);
 						}
-						
+						printf("Received all answers.\n");
+						bytesSent = send(players[0].getSocket(), (char*)composeNOTIFYMessage('n', players[0].getName()).c_str(), 100, 0);
+						if(bytesSent <= 0) {
+							printf("Failed to send NOTIFY to judge.\n");
+							exit(1);
+						}
+						printf("Sent answers size.\n");
+						// Send answers to judge
 						for (int i = 0; i < answers.size(); i++) {
 							message = composeSENDMessage('n', answers[i]);
 							bytesSent = send(players[0].getSocket(), (char*)message.c_str(), 100, 0);
@@ -279,7 +284,8 @@ int main(int argc, char *argv[]) {
 								i--;
 							}
 						}
-						
+						printf("Sent Answers to judge.\n");
+						// Receive requests
 						for (int i = 1; i < players.size(); i++) {
 							bytesRecv = 0;
 							while (bytesRecv <= 0) {
@@ -287,7 +293,7 @@ int main(int argc, char *argv[]) {
 							}
 							parseMessage(string(inBuffer));
 						}
-						
+						printf("Received all of the requests from clients.\n");
 						step++;
 						break;
 					case 4:
@@ -448,12 +454,18 @@ string composeNOTIFYMessage(char purpose, string playerName) {
 		//return strcat((char*)"winner: ", playerName);
 		return "NOTIFY Server\nwinner: " + playerName;
 	}
+	else if(purpose == 'n') {
+		stringstream s;
+		s << answers.size() - 1;
+		return "NOTIFY Server\nplayers: " + s.str();
+	}
 	else {
 		return "";
 	}
 
 }
 
+// finds player in a the list of Players
 Player getPlayer(string name) {
 	for (int i = 0; i < players.size(); i++) {
 		if (strcmp(players[i].getName().c_str(), name.c_str()) == 0) {
