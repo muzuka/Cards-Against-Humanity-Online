@@ -9,9 +9,9 @@
  *		+ Can get an appropriate name from server
  *		+ Receives messages from server
  *		+ Basic player and client communication possible
- *		+ Step 1 of the game
+ *		+ Step 1-3 of the game
  *	To be implemented:
- *		- Steps 2-6 of the game from the client's perspective
+ *		- Steps 4-6 of the game from the client's perspective
  *
  */
 
@@ -41,9 +41,11 @@ char outBuffer[200];
 vector<Card> answers;
 
 void printHand(vector<Card>);
-void parseMessage(string);
+int parseMessage(string);
 string composeSENDMessage(char, Card);
+string composeREQUESTMessage();
 string composeNOTIFYMessage(char, string);
+string substitute(string, string, char);
 int countChars(char*, char);
 void splitString(char**, char*, const char*);
 
@@ -152,12 +154,86 @@ int main(int argc, char* argv[]) {
 		parseMessage(string(inBuffer));
 		
 		if(isJudge) {
-			printf("Please wait for the answers.\n");
+			printf("Please wait for the others' answers.\n");
+			
+			memset(&inBuffer, 0, sizeof(inBuffer));
+			bytesRecv = 0;
+			while (bytesRecv <= 0) {
+				bytesRecv = recv(self.getSocket(), (char*)&inBuffer, 100, 0);
+			}
+			//printf("About to parse notify.\n");
+			int playerNum = parseMessage(string(inBuffer));
+			
+			printf("Got all of the answers");
+			for (int i = 0; i < playerNum; i++) {
+				memset(&inBuffer, 0, sizeof(inBuffer));
+				bytesRecv = 0;
+				while (bytesRecv <= 0) {
+					bytesRecv = recv(self.getSocket(), (char*)&inBuffer, 100, 0);
+				}
+				parseMessage(string(inBuffer));
+			}
+			
+			printf("All of the answers are ready.\n");
+			printHand(answers);
+			printf("Please select the best answer:\nCommands:\n");
+			printf("a # to send answer\nt # to test answer");
 		}
 		else {
+			bool good = false;
+			int num;
+			string answer, testAnswer;
+			printf("Please enter your answer in this form:\na # to send answer.\nt # to test the answer.\n");
+			printf("q to quit\nh to see hand.\n");
+			cin >> answer;
+			cin >> num;
+			
+			// Make a choice
+			while (!good) {
+				if (answer[0] == 't') {
+					testAnswer = substitute(blackCard.content, self.getHand()[num-1].content, '_');
+					printf("%s\n", testAnswer.c_str());
+				}
+				else if(answer[0] == 'a') {
+					bytesSent = send(self.getSocket(), (char*)composeSENDMessage('n', self.takeCard(num-1)).c_str(), 100, 1);
+					if (bytesSent <= 0) {
+						printf("Couldn't send answer.\n");
+						exit(1);
+					}
+					
+					break;
+				}
+				else if (answer[0] == 'q') {
+					exit(1);
+				}
+				else if(answer[0] == 'h') {
+					printHand(self.getHand());
+				}
+				else {
+					printf("Input not understood.\n");
+				}
+				
+				printf("Please enter your answer in this form:\na # to send answer.\nt # to test the answer.\n");
+				printf("q to quit\nh to see hand.\n");
+				cin >> answer;
+				cin >> num;
+			}
+			
+			bytesSent = send(self.getSocket(), (char*)composeREQUESTMessage().c_str(), 100, 0);
+			if (bytesSent <= 0) {
+				printf("Couldn't send request.\n");
+				exit(1);
+			}
+			
+			bytesRecv = 0;
+			memset(&inBuffer, 0, sizeof(inBuffer));
+			while (bytesRecv <= 0) {
+				bytesRecv = recv(self.getSocket(), (char*)&inBuffer, 100, 0);
+			}
+			parseMessage(string(inBuffer));
+			
 			
 		}
-
 	}
 }
 
@@ -175,7 +251,7 @@ void printHand(vector<Card> hand) {
  * ANSWER: adds card to answers
  * NOTIFY: updates newest judge or winner
  */
-void parseMessage(string message) {
+int parseMessage(string message) {
 	char* notifyMessage[2]; // [0] has option, [1] has name
 	char* messageDiv[2]; // [0] has first half, [1] has content
 	char* getCommand[2]; // [0] has command, [1] has source
@@ -212,6 +288,10 @@ void parseMessage(string message) {
 				printf("You have won this round!\n");
 				self.addPoint();
 			}
+		}
+		else if(strcmp((const char*)notifyMessage[0], "player:") == 0) {
+			printf("Receiving %d answers.\n", atoi(notifyMessage[1]));
+			return atoi(notifyMessage[1]);
 		}
 	}
 }
@@ -258,6 +338,17 @@ string composeNOTIFYMessage(char purpose, string playerName) {
 		return "";
 	}
 	
+}
+
+// substitutes a character instances 
+string substitute(string target, string replacement, char subChar) {
+	string newString = target;
+	for (int i = 0; i < newString.length(); i++) {
+		if (newString[i] == subChar) {
+			newString = newString.substr(0, i) + replacement + newString.substr(i+1);
+		}
+	}
+	return newString;
 }
 
 // counts instances of a character in a string
