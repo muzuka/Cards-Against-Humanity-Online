@@ -13,6 +13,7 @@
  *		+ Implements Step 1-3 of the game
  *	Features:
  *		- Steps 4-6 to be implemented
+ *		- New players are added once current turn is finished.
  *
  */
 
@@ -50,11 +51,12 @@ vector<Card> answers;
 vector<Card> discard;
 vector<Card> blackDeck;
 vector<Card> whiteDeck;
+vector<Player> newPlayers;
 vector<Player> players;
 
 
 void initServer(int&, int);
-int countChars(char*, char);
+int countChars(string, char);
 void parseAnswer(string, vector<Card>&);
 void parseMessage(string);
 vector<Card> shuffle(vector<Card>, int);
@@ -173,6 +175,7 @@ int main(int argc, char *argv[]) {
 				}
 				else {
 					printf("Players isn't empty.\n");
+					foundName = false;
 					for (int i = 0; i < players.size(); i++) {
 						if (players[i].getName().compare(inBuffer) == 0) {
 							outBuffer[0] = 'n';
@@ -261,15 +264,20 @@ int main(int argc, char *argv[]) {
 						answers.clear();
 						// Receive answers from others
 						for (int i = 1; i < players.size(); i++) {
-							
-							bytesRecv = 0;
-							while(bytesRecv <= 0) {
-								bytesRecv = recv(players[i].getSocket(), (char*)&inBuffer, 100, 0);
+							for (int j = 0; j < blackCard.numOfAnswers; j++) {
+								bytesRecv = 0;
+								while(bytesRecv <= 0) {
+									bytesRecv = recv(players[i].getSocket(), (char*)&inBuffer, 100, 0);
+								}
+								printf("player %d sent:\n%s.\n", i, (char*)string(inBuffer).c_str());
+								parseAnswer(string(inBuffer), answers);
 							}
-							parseAnswer(string(inBuffer), answers);
 						}
 						printf("Received all answers.\n");
-						bytesSent = send(players[0].getSocket(), (char*)composeNOTIFYMessage('n', players[0].getName()).c_str(), 100, 0);
+						// send expected # of answers to judge
+						message = composeNOTIFYMessage('n', string("Server"));
+						printf("About to send:\n%s\n", message.c_str());
+						bytesSent = send(judge.getSocket(), (char*)message.c_str(), 100, 0);
 						if(bytesSent <= 0) {
 							printf("Failed to send NOTIFY to judge.\n");
 							exit(1);
@@ -278,7 +286,7 @@ int main(int argc, char *argv[]) {
 						// Send answers to judge
 						for (int i = 0; i < answers.size(); i++) {
 							message = composeSENDMessage('n', answers[i]);
-							bytesSent = send(players[0].getSocket(), (char*)message.c_str(), 100, 0);
+							bytesSent = send(judge.getSocket(), (char*)message.c_str(), 100, 0);
 							if(bytesSent <= 0) {
 								printf("Failed to send ANSWER to judge.\n");
 								i--;
@@ -287,11 +295,13 @@ int main(int argc, char *argv[]) {
 						printf("Sent Answers to judge.\n");
 						// Receive requests
 						for (int i = 1; i < players.size(); i++) {
-							bytesRecv = 0;
-							while (bytesRecv <= 0) {
-								bytesRecv = recv(players[i].getSocket(), (char*)&inBuffer, 100, 0);
+							for (int j = 0; j < blackCard.numOfAnswers; j++) {
+								bytesRecv = 0;
+								while (bytesRecv <= 0) {
+									bytesRecv = recv(players[i].getSocket(), (char*)&inBuffer, 100, 0);
+								}
+								parseMessage(string(inBuffer));
 							}
-							parseMessage(string(inBuffer));
 						}
 						printf("Received all of the requests from clients.\n");
 						step++;
@@ -342,9 +352,9 @@ void initServer(int& serverSock, int port) {
 
 // counts instances of a character in a string
 // Ingame: Used to find the number of answers required for statement
-int countChars(char* l, char s) {
+int countChars(string l, char s) {
 	int elements = 0;
-	for (int i = 0; i < sizeof(l)/sizeof(char); i++) {
+	for (int i = 0; i < l.length(); i++) {
 		if(l[i] == s) {
 			elements++;
 		}
@@ -405,15 +415,13 @@ vector<Card> shuffle(vector<Card> deck, int seed) {
  */
 string composeSENDMessage(char type, Card cardToSend) {
 	if(type == 'p') {
-		//return strcat((char*)"POST Server\n", cardToSend.content.c_str());
 		return "POST Server\n" + cardToSend.content;
 	}
 	else if(type == 'n') {
-		//return strcat((char*)"ANSWER Server\n", cardToSend.content.c_str());
+		printf("About to send ANSWER:\n%s\n", cardToSend.content.c_str());
 		return "ANSWER " + cardToSend.owner->getName() +"\n" + cardToSend.content;
 	}
 	else if (type == 'd') {
-		//return strcat((char*)"ADD Server\n", cardToSend.content.c_str());
 		return "ADD Server\n" + cardToSend.content;
 	}
 	else {
@@ -447,16 +455,14 @@ vector<Player> shuffle(vector<Player> deck, int seed) {
  */
 string composeNOTIFYMessage(char purpose, string playerName) {
 	if (purpose == 'j') {
-		//return strcat((char*)"CP: ", playerName);
 		return "NOTIFY Server\nCP: " + playerName;
 	}
 	else if (purpose == 'w') {
-		//return strcat((char*)"winner: ", playerName);
 		return "NOTIFY Server\nwinner: " + playerName;
 	}
 	else if(purpose == 'n') {
 		stringstream s;
-		s << answers.size() - 1;
+		s << answers.size();
 		return "NOTIFY Server\nplayers: " + s.str();
 	}
 	else {
