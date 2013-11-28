@@ -145,21 +145,33 @@ int main(int argc, char* argv[]) {
 		
 		printf("A new round has begun!\n");
 		
-		memset(&inBuffer, 0, sizeof(inBuffer));
 		// receive NOTIFY for new judge
-		bytesRecv = 0;
-		while(bytesRecv <= 0) {
-			bytesRecv = recv(self.getSocket(), (char*)&inBuffer, 100, 0);
+		while (true) {
+			memset(&inBuffer, 0, sizeof(inBuffer));
+			bytesRecv = 0;
+			while(bytesRecv <= 0) {
+				bytesRecv = recv(self.getSocket(), (char*)&inBuffer, 100, 0);
+			}
+			if (string(inBuffer).length() != 0) {
+				printf("The new judge is %s.\n", string(inBuffer).c_str());
+				parseMessage(string(inBuffer));
+				break;
+			}
 		}
-		parseMessage(string(inBuffer));
 		
-		memset(&inBuffer, 0, sizeof(inBuffer));
 		// receive POST for new black card
-		bytesRecv = 0;
-		while(bytesRecv <= 0) {
-			bytesRecv = recv(self.getSocket(), (char*)&inBuffer, 100, 0);
+		while (true) {
+			memset(&inBuffer, 0, sizeof(inBuffer));
+			bytesRecv = 0;
+			while(bytesRecv <= 0) {
+				bytesRecv = recv(self.getSocket(), (char*)&inBuffer, 100, 0);
+			}
+			if (string(inBuffer).length() != 0) {
+				printf("The black card is %s.\n", string(inBuffer).c_str());
+				parseMessage(string(inBuffer));
+				break;
+			}
 		}
-		parseMessage(string(inBuffer));
 		
 		string ans[3];
 		int num[3];
@@ -266,6 +278,13 @@ int main(int argc, char* argv[]) {
 						break;
 					default:
 						break;
+				}
+				if (!ready) {
+					printf("Please select the best answer:\nCommands:\n");
+					printf("a # to send answer.\nt # to test answer.\nh to see hand\ns to see score\nq to quit.\n");
+					
+					cin >> answer;
+					cin >> num[0];
 				}
 			}
 		}
@@ -542,23 +561,23 @@ int parseMessage(string message) {
 	char* getCommand[2]; // [0] has command, [1] has source
 	splitString(messageDiv, (char*)message.c_str(), "\n");
 	splitString(getCommand, messageDiv[0], " ");
-	if (countChars(message, '\n') < 1) {
-		printf("No newline char.\n");
-	}
 	printf("Parsing message:\n%s\n", message.c_str());
 	
 	if(strcmp((const char*)getCommand[0], "ADD") == 0) {
 		self.addCard(Card(string(messageDiv[1]), self.getName()));
 		printf("Got a new card.\n");
+		return 1;
 	}
 	else if(strcmp((const char*)getCommand[0], "POST") == 0) {
 		blackCard = Card(string(messageDiv[1]), 'b', countChars(messageDiv[1], '_'));
 		printf("Received a new black card:\n\"%s\"\n", messageDiv[1]);
+		return 1;
 	}
 	else if(strcmp((const char*)getCommand[0], "ANSWER") == 0) {
 		printf("New answer:\n");
 		printf("%s\n", messageDiv[1]);
 		answers.push_back(Card(string(messageDiv[1]), string(getCommand[1])));
+		return 1;
 	}
 	else if(strcmp((const char*)getCommand[0], "NOTIFY") == 0) {
 		splitString(notifyMessage, messageDiv[1], " ");
@@ -586,6 +605,7 @@ int parseMessage(string message) {
 					printf("The new judge is %s.\n", notifyMessage[1]);
 				}
 			}
+			
 		}
 		else if(strcmp((const char*)notifyMessage[0], "winner:") == 0) {
 			if(strcmp(self.getName().c_str(), (const char*)notifyMessage[1]) == 0) {
@@ -597,7 +617,15 @@ int parseMessage(string message) {
 			printf("Receiving %d answers from %s.\n", atoi(notifyMessage[1]), notifyMessage[1]);
 			return atoi(notifyMessage[1]);
 		}
+		else {
+			return -1;
+		}
+		return 1;
 	}
+	else {
+		return -1;
+	}
+
 }
 
 // composes a message to send, made of the card and source

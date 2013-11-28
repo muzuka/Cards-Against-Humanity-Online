@@ -56,8 +56,8 @@ vector<Player> players;
 
 void initServer(int&, int);
 int countChars(string, char);
-void parseAnswer(string, vector<Card>&);
-void parseMessage(string);
+int parseAnswer(string, vector<Card>&);
+int parseMessage(string);
 vector<Card> shuffle(vector<Card>, int);
 string composeSENDMessage(char, Card);
 vector<Player> shuffle(vector<Player>, int);
@@ -228,11 +228,11 @@ int main(int argc, char *argv[]) {
 		else {
 			if(players.size() > 2) {
 				string message;
-				switch (step % 5) {
+				switch (step % 3) {
 					// Choose judge and NOTIFY the others
 					case 0:
 						printf("Choosing a judge.\n");
-						players = shuffle(players, atoi(argv[1]));
+						players = shuffle(players, atoi(argv[1])-step);
 						judge = players[0];
 						
 						message = composeNOTIFYMessage('j', judge.getName());
@@ -310,9 +310,8 @@ int main(int argc, char *argv[]) {
 							}
 						}
 						printf("Received all of the requests from clients.\n");
-						step++;
-						break;
-					case 3:
+						//step++;
+						//break;
 						// receives winner
 						bytesRecv = 0;
 						memset(&inBuffer, 0, sizeof(inBuffer));
@@ -320,9 +319,8 @@ int main(int argc, char *argv[]) {
 							bytesRecv = recv(judge.getSocket(), (char*)&inBuffer, 100, 0);
 						}
 						parseMessage(string(inBuffer));
-						step++;
-						break;
-					case 4:
+						//step++;
+						//break;
 						// Tell everybody else
 						for (int i = 1; i < players.size(); i++) {
 							string winningMesssage = composeNOTIFYMessage('w', winner.getName());
@@ -386,7 +384,7 @@ int countChars(string l, char s) {
 	return elements;
 }
 
-void parseAnswer(string message, vector<Card> &answers) {
+int parseAnswer(string message, vector<Card> &answers) {
 	char* messageDiv[2]; // [0] has first half, [1] has content
 	char* getCommand[2]; // [0] has command, [1] has source
 	splitString(messageDiv, (char*)message.c_str(), "\n");
@@ -395,10 +393,15 @@ void parseAnswer(string message, vector<Card> &answers) {
 	if(strcmp((const char*)getCommand[0], "ANSWER") == 0) {
 		players[getPlayerIndex(string(getCommand[1]))].takeCard(string(messageDiv[1]));
 		answers.push_back(Card(string(messageDiv[1]), string(getCommand[1])));
+		return 1;
 	}
+	else {
+		return -1;
+	}
+
 }
 
-void parseMessage(string message) {
+int parseMessage(string message) {
 	char* notifyMessage[2]; // [0] has option, [1] has name
 	char* messageDiv[2]; // [0] has type and source, [1] has content
 	char* getCommand[2]; // [0] has command, [1] has source
@@ -410,6 +413,7 @@ void parseMessage(string message) {
 		string add = composeSENDMessage('d', whiteDeck[whiteDeck.size() - 1]);
 		whiteDeck.pop_back();
 		bytesSent = send(newP.getSocket(), (char*)add.c_str(), 100, 0);
+		return 1;
 	}
 	else if(strcmp((const char*)getCommand[0], "NOTIFY") == 0) {
 		splitString(notifyMessage, messageDiv[1], " ");
@@ -425,7 +429,12 @@ void parseMessage(string message) {
 			close(temp.getSocket());
 			deletePlayer(string(notifyMessage[1]));
 		}
+		return 1;
 	}
+	else {
+		return -1;
+	}
+
 }
 
 // shuffles the elements in the deck
@@ -453,15 +462,15 @@ vector<Card> shuffle(vector<Card> deck, int seed) {
  */
 string composeSENDMessage(char type, Card cardToSend) {
 	if(type == 'p') {
-		printf("About to send POST:\n%s\n", cardToSend.content.c_str());
+		//printf("About to send POST:\n%s\n", cardToSend.content.c_str());
 		return "POST Server\n" + cardToSend.content;
 	}
 	else if(type == 'n') {
-		printf("About to send ANSWER:\n%s %s\n", cardToSend.owner.c_str(), cardToSend.content.c_str());
+		//printf("About to send ANSWER:\n%s %s\n", cardToSend.owner.c_str(), cardToSend.content.c_str());
 		return "ANSWER " + cardToSend.owner + "\n" + cardToSend.content;
 	}
 	else if (type == 'd') {
-		printf("About to send ADD:\n%s\n", cardToSend.content.c_str());
+		//printf("About to send ADD:\n%s\n", cardToSend.content.c_str());
 		return "ADD Server\n" + cardToSend.content;
 	}
 	else {
