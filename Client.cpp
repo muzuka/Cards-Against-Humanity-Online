@@ -565,6 +565,7 @@ int parseMessage(string message) {
 		if(strcmp((const char*)notifyMessage[0], "CP:") == 0) {
 			if (strcmp(self.getName().c_str(), (const char*)notifyMessage[1]) == 0) {
 				if (isJudge) {
+					answers.clear();
 					printf("You are the new judge!\n");
 				}
 				else {
@@ -577,6 +578,7 @@ int parseMessage(string message) {
 				if (isJudge) {
 					isJudge = !isJudge;
 					judge.setName(string(notifyMessage[1]));
+					answers.clear();
 					printf("The new judge is %s.\n", notifyMessage[1]);
 				}
 				else {
