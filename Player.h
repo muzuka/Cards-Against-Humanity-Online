@@ -40,6 +40,7 @@ class Player {
 	void addWinningCard(Card);
 	void addCard(Card);
 	Card takeCard(int);
+	Card takeCard(std::string);
 	bool isEqual(Player);
 	bool isEqual(Player, Player);
 	

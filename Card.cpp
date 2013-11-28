@@ -22,15 +22,15 @@ Card::Card() {
 	content = "";
 	type = ' ';
 	numOfAnswers = 0;
-	owner = NULL;
+	owner = "";
 }
 
 // complete constructor
-Card::Card(std::string c, char t, int n, Player p) {
+Card::Card(std::string c, char t, int n, std::string p) {
 	content = c;
 	type = t;
 	numOfAnswers = n;
-	owner = &p;
+	owner = p;
 }
 
 // complete constructor
@@ -38,23 +38,17 @@ Card::Card(std::string c, char t, int n) {
 	content = c;
 	type = t;
 	numOfAnswers = n;
-	owner = NULL;
+	owner = "";
 }
 
 // quick white card constructor
-Card::Card(std::string c, Player p) {
+Card::Card(std::string c, std::string p) {
 	content = c;
 	type = 'w';
 	numOfAnswers = 0;
-	owner = &p;
+	owner = p;
 }
 
 void Card::print() {
 	printf("%s\n", content.c_str());
-}
-
-std::string Card::toString() {
-	char* name = strcat((char*)owner->getName().c_str(), "\n");
-	std::string temp(strcat(name, content.c_str()));
-	return temp;
 }

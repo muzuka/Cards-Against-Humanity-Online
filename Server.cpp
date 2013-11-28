@@ -40,8 +40,8 @@ int maxDesc = 0;
 fd_set recvSockSet;
 bool terminated = false;
 
-int step = 1;
-Player judge;
+int step = 0;
+Player judge, winner;
 Card blackCard;
 int bytesRecv = 0;
 int bytesSent = 0;
@@ -51,7 +51,6 @@ vector<Card> answers;
 vector<Card> discard;
 vector<Card> blackDeck;
 vector<Card> whiteDeck;
-vector<Player> newPlayers;
 vector<Player> players;
 
 
@@ -64,6 +63,8 @@ string composeSENDMessage(char, Card);
 vector<Player> shuffle(vector<Player>, int);
 string composeNOTIFYMessage(char, string);
 Player getPlayer(string);
+int getPlayerIndex(string);
+void deletePlayer(string);
 void splitString(char**, char*, const char*);
 
 
@@ -212,6 +213,7 @@ int main(int argc, char *argv[]) {
 					
 				bytesSent = 0;
 				string out = composeSENDMessage('d', whiteDeck[whiteDeck.size()-1]);
+				players[players.size()-1].addCard(whiteDeck[whiteDeck.size()-1]);
 				whiteDeck.pop_back();
 				bytesSent = send(clientSock, (char*)out.c_str(), 100, 0);
 				if (bytesSent <= 0) {
@@ -226,9 +228,9 @@ int main(int argc, char *argv[]) {
 		else {
 			if(players.size() > 2) {
 				string message;
-				switch (step % 6) {
+				switch (step % 5) {
 					// Choose judge and NOTIFY the others
-					case 1:
+					case 0:
 						printf("Choosing a judge.\n");
 						players = shuffle(players, atoi(argv[1]));
 						judge = players[0];
@@ -245,7 +247,7 @@ int main(int argc, char *argv[]) {
 						step++;
 						break;
 					// choose black card and POST it
-					case 2:
+					case 1:
 						printf("Choosing a black card.\n");
 						blackCard = blackDeck[blackDeck.size() - 1];
 						blackDeck.pop_back();
@@ -260,11 +262,13 @@ int main(int argc, char *argv[]) {
 						}
 						step++;
 						break;
-					case 3:
+					// Handles answers and requests
+					case 2:
 						answers.clear();
 						// Receive answers from others
 						for (int i = 1; i < players.size(); i++) {
 							for (int j = 0; j < blackCard.numOfAnswers; j++) {
+								memset(&inBuffer, 0, sizeof(inBuffer));
 								bytesRecv = 0;
 								while(bytesRecv <= 0) {
 									bytesRecv = recv(players[i].getSocket(), (char*)&inBuffer, 100, 0);
@@ -286,6 +290,7 @@ int main(int argc, char *argv[]) {
 						// Send answers to judge
 						for (int i = 0; i < answers.size(); i++) {
 							message = composeSENDMessage('n', answers[i]);
+							printf("About to send ANSWER to judge:\n%s\n", message.c_str());
 							bytesSent = send(judge.getSocket(), (char*)message.c_str(), 100, 0);
 							if(bytesSent <= 0) {
 								printf("Failed to send ANSWER to judge.\n");
@@ -296,6 +301,7 @@ int main(int argc, char *argv[]) {
 						// Receive requests
 						for (int i = 1; i < players.size(); i++) {
 							for (int j = 0; j < blackCard.numOfAnswers; j++) {
+								memset(&inBuffer, 0, sizeof(inBuffer));
 								bytesRecv = 0;
 								while (bytesRecv <= 0) {
 									bytesRecv = recv(players[i].getSocket(), (char*)&inBuffer, 100, 0);
@@ -306,10 +312,28 @@ int main(int argc, char *argv[]) {
 						printf("Received all of the requests from clients.\n");
 						step++;
 						break;
-					case 4:
-						
+					case 3:
+						// receives winner
+						bytesRecv = 0;
+						memset(&inBuffer, 0, sizeof(inBuffer));
+						while (bytesRecv <= 0) {
+							bytesRecv = recv(judge.getSocket(), (char*)&inBuffer, 100, 0);
+						}
+						parseMessage(string(inBuffer));
+						step++;
 						break;
-
+					case 4:
+						// Tell everybody else
+						for (int i = 1; i < players.size(); i++) {
+							string winningMesssage = composeNOTIFYMessage('w', winner.getName());
+							bytesSent = send(players[i].getSocket(), (char*)winningMesssage.c_str(), 100, 0);
+							if(bytesSent <= 0) {
+								printf("Failed to winner message.\n");
+								exit(1);
+							}
+						}
+						step++;
+						break;
 					default:
 						break;
 				}
@@ -369,12 +393,14 @@ void parseAnswer(string message, vector<Card> &answers) {
 	splitString(getCommand, messageDiv[0], " ");
 	
 	if(strcmp((const char*)getCommand[0], "ANSWER") == 0) {
-		answers.push_back(Card(string(messageDiv[1]), getPlayer(string(getCommand[1]))));
+		players[getPlayerIndex(string(getCommand[1]))].takeCard(string(messageDiv[1]));
+		answers.push_back(Card(string(messageDiv[1]), string(getCommand[1])));
 	}
 }
 
 void parseMessage(string message) {
-	char* messageDiv[2]; // [0] has first half, [1] has content
+	char* notifyMessage[2]; // [0] has option, [1] has name
+	char* messageDiv[2]; // [0] has type and source, [1] has content
 	char* getCommand[2]; // [0] has command, [1] has source
 	splitString(messageDiv, (char*)message.c_str(), "\n");
 	splitString(getCommand, messageDiv[0], " ");
@@ -386,7 +412,19 @@ void parseMessage(string message) {
 		bytesSent = send(newP.getSocket(), (char*)add.c_str(), 100, 0);
 	}
 	else if(strcmp((const char*)getCommand[0], "NOTIFY") == 0) {
-		
+		splitString(notifyMessage, messageDiv[1], " ");
+		if (strcmp(notifyMessage[0], "winner:") == 0) {
+			for (int i = 0; i < answers.size(); i++) {
+				discard.push_back(answers[i]);
+			}
+			answers.clear();
+			winner = getPlayer(string(notifyMessage[1]));
+		}
+		else if(strcmp(notifyMessage[0], "quit:") == 0) {
+			Player temp = getPlayer(string(notifyMessage[1]));
+			close(temp.getSocket());
+			deletePlayer(string(notifyMessage[1]));
+		}
 	}
 }
 
@@ -415,13 +453,15 @@ vector<Card> shuffle(vector<Card> deck, int seed) {
  */
 string composeSENDMessage(char type, Card cardToSend) {
 	if(type == 'p') {
+		printf("About to send POST:\n%s\n", cardToSend.content.c_str());
 		return "POST Server\n" + cardToSend.content;
 	}
 	else if(type == 'n') {
-		printf("About to send ANSWER:\n%s\n", cardToSend.content.c_str());
-		return "ANSWER " + cardToSend.owner->getName() +"\n" + cardToSend.content;
+		printf("About to send ANSWER:\n%s %s\n", cardToSend.owner.c_str(), cardToSend.content.c_str());
+		return "ANSWER " + cardToSend.owner + "\n" + cardToSend.content;
 	}
 	else if (type == 'd') {
+		printf("About to send ADD:\n%s\n", cardToSend.content.c_str());
 		return "ADD Server\n" + cardToSend.content;
 	}
 	else {
@@ -478,7 +518,30 @@ Player getPlayer(string name) {
 			return players[i];
 		}
 	}
-	return NULL;
+	return Player();
+}
+
+int getPlayerIndex(string name) {
+	for (int i = 0; i < players.size(); i++) {
+		if (strcmp(players[i].getName().c_str(), name.c_str()) == 0) {
+			return i;
+		}
+	}
+	return -1;
+}
+
+void deletePlayer(string playerName) {
+	vector<Player> temp;
+	for (int i = 0; i < players.size(); i++) {
+		if (strcmp(players[i].getName().c_str(), playerName.c_str()) != 0) {
+			temp.push_back(players[i]);
+		}
+		else {
+			delete &players[i];
+		}
+
+	}
+	players = temp;
 }
 
 // splits the string "target" into the "parts" array by the "delim" characters

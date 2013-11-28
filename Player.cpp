@@ -66,9 +66,21 @@ void Player::addCard(Card newCard) {
 }
 
 Card Player::takeCard(int index) {
+	if (index > hand.size() || index < 0) {
+		return Card();
+	}
 	Card temp = hand[index];
 	hand = deleteCard(hand, index);
 	return temp;
+}
+
+Card Player::takeCard(std::string content) {
+	for (int i = 0; i < hand.size(); i++) {
+		if (hand[i].content.compare(content) == 0) {
+			return hand[i];
+		}
+	}
+	return Card();
 }
 
 bool Player::isEqual(Player p) {
