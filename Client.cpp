@@ -2,16 +2,14 @@
  *  The client acts as the player in the game.
  *  
  *  Written by: Sean Brown
- *	UCID: 10062604
+ *        UCID: 10062604
  *  
  *  Features:
- *		+ Send messages to server
- *		+ Can get an appropriate name from server
- *		+ Receives messages from server
- *		+ Basic player and client communication possible
- *		+ Step 1-3 of the game
- *	To be implemented:
- *		- Steps 4-6 of the game from the client's perspective
+ *                + Send messages to server
+ *                + Can get an appropriate name from server
+ *                + Receives messages from server
+ *                + Basic player and client communication possible
+ *                + All steps of the game finished
  *
  */
 
@@ -63,7 +61,7 @@ int main(int argc, char* argv[]) {
 	string name;
 	printf("Welcome to Cards Against Humanity Online!\n");
 	printf("Experience all of the hilarious and bad humour of the real thing.\n");
-	printf("What do you want as a username:\n");
+	printf("What do you want as a username(Must be unique and have no spaces):\n");
 	cin >> name;
 	self.setName(name);
 	printf("Please wait until you have connected.\n");
@@ -134,7 +132,7 @@ int main(int argc, char* argv[]) {
 	}
 	
 	if(self.getHand().empty()) {
-		 printf("Hand is empty.\n");
+		printf("Hand is empty.\n");
 	}
 	else {
 		printf("This is your current hand.\nPlease enter the number to choose one when prompted.\n");
@@ -164,7 +162,7 @@ int main(int argc, char* argv[]) {
 			memset(&inBuffer, 0, sizeof(inBuffer));
 			bytesRecv = 0;
 			while(bytesRecv <= 0) {
-				bytesRecv = recv(self.getSocket(), (char*)&inBuffer, 100, 0);
+				bytesRecv = recv(self.getSocket(), (char*)&inBuffer, 300, 0);
 			}
 			if (string(inBuffer).length() != 0) {
 				printf("The black card is %s.\n", string(inBuffer).c_str());
@@ -196,8 +194,8 @@ int main(int argc, char* argv[]) {
 				else {
 					printf("Nothing received yet.\n");
 				}
-
-			
+				
+				
 			}
 			printf("PlayerNum is equal to %d.\n", playerNum);
 			// receive answers
@@ -216,15 +214,36 @@ int main(int argc, char* argv[]) {
 			printf("All of the answers are ready.\n");
 			printAnswers(answers, blackCard.numOfAnswers);
 			printf("Please select the best answer:\nCommands:\n");
-			printf("a # to send answer.\nt # to test answer.\nh to see hand\ns to see score\nq to quit.\n");
-
-			cin >> answer;
-			cin >> num[0];
-			bool ready = false;
+			printf("a # to send answer.\nt # to test answer.\nh to see choices.\ns to see score.\nq to quit.\n");
+			
 			string chosen, note;
+			cin >> answer;
+			if (answer == 'q') {
+				note = composeNOTIFYMessage('q', self.getName());
+				bytesSent = send(self.getSocket(), (char*)note.c_str(), 100, 0);
+				if (bytesSent <= 0) {
+					printf("Couldn't send quit.\n");
+					exit(1);
+				}
+				exit(1);
+			}
+			else if (answer == 'h') {
+				printAnswers(answers, blackCard.numOfAnswers);
+			}
+			else if (answer == 's') {
+				printf("You have won %d rounds.\n", self.getScore());
+			}
+			else {
+				cin >> num[0];
+			}
+			bool ready = false;
 			while (!ready) {
 				switch (answer) {
 					case 'a':
+						if(num[0] > blackCard.numOfAnswers || num[0] < 1) {
+							printf("Choice is out of range. Try again.");
+							break;
+						}
 						chosen = composeNOTIFYMessage('w', answers[blackCard.numOfAnswers*(num[0] - 1)].owner);
 						bytesSent = send(self.getSocket(), (char*)chosen.c_str(), 100, 0);
 						if (bytesSent <= 0) {
@@ -261,21 +280,6 @@ int main(int argc, char* argv[]) {
 								break;
 						}
 						break;
-					case 'q':
-						note = composeNOTIFYMessage('q', self.getName());
-						bytesSent = send(self.getSocket(), (char*)note.c_str(), 100, 0);
-						if (bytesSent <= 0) {
-							printf("Couldn't send quit.\n");
-							exit(1);
-						}
-						exit(1);
-						break;
-					case 'h':
-						printHand(self.getHand());
-						break;
-					case 's':
-						printf("You have won %d rounds.\n", self.getScore());
-						break;
 					default:
 						break;
 				}
@@ -284,7 +288,24 @@ int main(int argc, char* argv[]) {
 					printf("a # to send answer.\nt # to test answer.\nh to see hand\ns to see score\nq to quit.\n");
 					
 					cin >> answer;
-					cin >> num[0];
+					if (answer == 'q') {
+						note = composeNOTIFYMessage('q', self.getName());
+						bytesSent = send(self.getSocket(), (char*)note.c_str(), 100, 0);
+						if (bytesSent <= 0) {
+							printf("Couldn't send quit.\n");
+							exit(1);
+						}
+						exit(1);
+					}
+					else if (answer == 'h') {
+						printAnswers(answers, blackCard.numOfAnswers);
+					}
+					else if (answer == 's') {
+						printf("You have won %d rounds.\n", self.getScore());
+					}
+					else {
+						cin >> num[0];
+					}
 				}
 			}
 		}
@@ -295,7 +316,7 @@ int main(int argc, char* argv[]) {
 				case 1:
 					printf("This black card requires one white card.\n");
 					printf("Please enter your answer in this form:\na # to send answer.\nt # to test the answer.\n");
-					printf("s to see score.\nh to see hand.\nq to quit.\n");
+					printf("s to see score.\nb to see black card\nh to see hand.\nq to quit.\n");
 					cin >> answer;
 					if (answer == 'q') {
 						string note = composeNOTIFYMessage('q', self.getName());
@@ -311,6 +332,9 @@ int main(int argc, char* argv[]) {
 					}
 					else if(answer == 's') {
 						printf("You have won %d rounds.\n", self.getScore());
+					}
+					else if(answer == 'b') {
+						printf("%s\n", blackCard.content.c_str());
 					}
 					else {
 						cin >> num[0];
@@ -319,7 +343,7 @@ int main(int argc, char* argv[]) {
 				case 2:
 					printf("This black card requires two white cards.\n");
 					printf("Please enter your answer in this form:\na # # to send answer.\nt # # to test the answer");
-					printf("s to see score.\nh to see hand.\nq to quit.\n");
+					printf("s to see score.\nb to see black card\nh to see hand.\nq to quit.\n");
 					cin >> answer;
 					if (answer == 'q') {
 						string note = composeNOTIFYMessage('q', self.getName());
@@ -335,6 +359,9 @@ int main(int argc, char* argv[]) {
 					}
 					else if(answer == 's') {
 						printf("You have won %d rounds.\n", self.getScore());
+					}
+					else if(answer == 'b') {
+						printf("%s\n", blackCard.content.c_str());
 					}
 					else {
 						cin >> num[0];
@@ -344,7 +371,7 @@ int main(int argc, char* argv[]) {
 				case 3:
 					printf("This black card requires three white cards.\n");
 					printf("Please enter your answer in this form:\na # # # to send answer.\nt # # # to test the answer");
-					printf("s to see score.\nh to see hand.\nq to quit.\n");
+					printf("s to see score.\nb to see black card\nh to see hand.\nq to quit.\n");
 					cin >> answer;
 					if (answer == 'q') {
 						string note = composeNOTIFYMessage('q', self.getName());
@@ -360,6 +387,9 @@ int main(int argc, char* argv[]) {
 					}
 					else if(answer == 's') {
 						printf("You have won %d rounds.\n", self.getScore());
+					}
+					else if(answer == 'b') {
+						printf("%s\n", blackCard.content.c_str());
 					}
 					else {
 						cin >> num[0];
@@ -417,7 +447,7 @@ int main(int argc, char* argv[]) {
 					case 1:
 						printf("This black card requires one  white card.\n");
 						printf("Please enter your answer in this form:\na # to send answer.\nt # to test the answer.\n");
-						printf("s to see score.\nh to see hand.\nq to quit.\n");
+						printf("s to see score.\nb to see black card\nh to see hand.\nq to quit.\n");
 						cin >> answer;
 						if (answer == 'q') {
 							string note = composeNOTIFYMessage('q', self.getName());
@@ -433,6 +463,9 @@ int main(int argc, char* argv[]) {
 						}
 						else if(answer == 's') {
 							printf("You have won %d rounds.\n", self.getScore());
+						}
+						else if(answer == 'b') {
+							printf("%s\n", blackCard.content.c_str());
 						}
 						else {
 							cin >> num[0];
@@ -441,7 +474,7 @@ int main(int argc, char* argv[]) {
 					case 2:
 						printf("This black card requires two white cards.\n");
 						printf("Please enter your answer in this form:\na # # to send answer.\nt # # to test the answer");
-						printf("s to see score.\nh to see hand.\nq to quit.\n");
+						printf("s to see score.\nb to see black card\nh to see hand.\nq to quit.\n");
 						cin >> answer;
 						if (answer == 'q') {
 							string note = composeNOTIFYMessage('q', self.getName());
@@ -457,6 +490,9 @@ int main(int argc, char* argv[]) {
 						}
 						else if(answer == 's') {
 							printf("You have won %d rounds.\n", self.getScore());
+						}
+						else if(answer == 'b') {
+							printf("%s\n", blackCard.content.c_str());
 						}
 						else {
 							cin >> num[0];
@@ -466,7 +502,7 @@ int main(int argc, char* argv[]) {
 					case 3:
 						printf("This black card requires three white cards.\n");
 						printf("Please enter your answer in this form:\na # # # to send answer.\nt # # # to test the answer");
-						printf("s to see score.\nh to see hand.\nq to quit.\n");
+						printf("s to see score.\nb to see black card\nh to see hand.\nq to quit.\n");
 						cin >> answer;
 						if (answer == 'q') {
 							string note = composeNOTIFYMessage('q', self.getName());
@@ -482,6 +518,9 @@ int main(int argc, char* argv[]) {
 						}
 						else if(answer == 's') {
 							printf("You have won %d rounds.\n", self.getScore());
+						}
+						else if(answer == 'b') {
+							printf("%s\n", blackCard.content.c_str());
 						}
 						else {
 							cin >> num[0];
@@ -515,16 +554,21 @@ int main(int argc, char* argv[]) {
 				else {
 					i--;
 				}
-
+				
 			}
 			printf("Received all new cards as needed.\n");
 			
-			memset(&inBuffer, 0, sizeof(inBuffer));
-			bytesRecv = 0;
-			while (bytesRecv <= 0) {
-				bytesRecv = recv(self.getSocket(), (char*)&inBuffer, 100, 0);
+			while (true) {
+				memset(&inBuffer, 0, sizeof(inBuffer));
+				bytesRecv = 0;
+				while (bytesRecv <= 0) {
+					bytesRecv = recv(self.getSocket(), (char*)&inBuffer, 100, 0);
+				}
+				if (string(inBuffer).length() != 0) {
+					parseMessage(string(inBuffer));
+					break;
+				}
 			}
-			parseMessage(string(inBuffer));
 		}
 	}
 }
@@ -540,11 +584,11 @@ void printHand(vector<Card> hand) {
 // It also keeps the answers together with the source
 void printAnswers(vector<Card> answers, int numOfAnswers) {
 	int count = 1;
-	for (int i = 0; i < answers.size(); i++) {
-		printf("%d %s\n", count, answers[i].content.c_str());
-		if (i % numOfAnswers == 0) {
-			count++;
+	for (int i = 0; i < answers.size()/numOfAnswers; i++) {
+		for (int j = 0; j < numOfAnswers; j++) {
+			printf("%d %s\n", count, answers[i].content.c_str());
 		}
+		count++;
 	}
 }
 
@@ -561,11 +605,10 @@ int parseMessage(string message) {
 	char* getCommand[2]; // [0] has command, [1] has source
 	splitString(messageDiv, (char*)message.c_str(), "\n");
 	splitString(getCommand, messageDiv[0], " ");
-	printf("Parsing message:\n%s\n", message.c_str());
 	
 	if(strcmp((const char*)getCommand[0], "ADD") == 0) {
 		self.addCard(Card(string(messageDiv[1]), self.getName()));
-		printf("Got a new card.\n");
+		//printf("Got a new card.\n");
 		return 1;
 	}
 	else if(strcmp((const char*)getCommand[0], "POST") == 0) {
@@ -615,7 +658,14 @@ int parseMessage(string message) {
 		}
 		else if(strcmp((const char*)notifyMessage[0], "players:") == 0) {
 			printf("Receiving %d answers from %s.\n", atoi(notifyMessage[1]), notifyMessage[1]);
+			if (atoi(notifyMessage[1]) == 0) {
+				printf("No more players.\nQuitting now.\n");
+				exit(1);
+			}
 			return atoi(notifyMessage[1]);
+		}
+		else if(strcmp((const char*)notifyMessage[0], "quit:") == 0) {
+			exit(1);
 		}
 		else {
 			return -1;
@@ -625,7 +675,7 @@ int parseMessage(string message) {
 	else {
 		return -1;
 	}
-
+	
 }
 
 // composes a message to send, made of the card and source
@@ -697,7 +747,7 @@ int countChars(string l, char s) {
 
 // splits the string "target" into the "parts" array by the "delim" characters
 // note: must know the size of "parts" you will need before calculation
-//		 otherwise provide a bigger than necessary array for parts
+//                 otherwise provide a bigger than necessary array for parts
 void splitString(char* parts[], char* target, const char* delim) {
 	char* tok;
 	tok = std::strtok(target, delim);

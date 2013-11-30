@@ -1,4 +1,3 @@
-
 /*
  *	The server implementation of Cards Against Humanity
  *	This handles communication between clients and runs the game.
@@ -10,10 +9,9 @@
  *		+ Accepts any client connection
  *		+ Sends messages to clients
  *		+ Can receive messages from client
- *		+ Implements Step 1-3 of the game
- *	Features:
- *		- Steps 4-6 to be implemented
- *		- New players are added once current turn is finished.
+ *		+ Implements all steps of the game
+ *		+ New players are added once current turn is finished.
+ *		
  *
  */
 
@@ -62,6 +60,8 @@ vector<Card> shuffle(vector<Card>, int);
 string composeSENDMessage(char, Card);
 vector<Player> shuffle(vector<Player>, int);
 string composeNOTIFYMessage(char, string);
+void shutdown();
+void refill();
 Player getPlayer(string);
 int getPlayerIndex(string);
 void deletePlayer(string);
@@ -69,7 +69,7 @@ void splitString(char**, char*, const char*);
 
 
 int main(int argc, char *argv[]) {
-  
+	
 	int serverSock;
 	int clientSock;
 	struct sockaddr_in clientAddr;
@@ -94,7 +94,7 @@ int main(int argc, char *argv[]) {
 	ifstream blackCardReader, whiteCardReader;
 	blackCardReader.open(argv[2]);
 	whiteCardReader.open(argv[3]);
-
+	
 	
 	if (!blackCardReader.is_open() || !whiteCardReader.is_open()) {
 		printf("File open failed\n");
@@ -162,7 +162,7 @@ int main(int argc, char *argv[]) {
 					bytesRecv = recv(clientSock, (char*)&inBuffer, 20, 0);
 				}
 				printf("%s\n", inBuffer);
-			
+				
 				if (players.size() < 1) {
 					printf("Players is Empty.\n");
 					outBuffer[0] = 'y';
@@ -207,11 +207,14 @@ int main(int argc, char *argv[]) {
 			string n(inBuffer);
 			Player newPlayer(n, clientSock);
 			players.push_back(newPlayer);
-				
+			
 			printf("About to send Cards.\n");
 			for (int i = 0; i < 10; i++) {
-					
+				
 				bytesSent = 0;
+				if (whiteDeck.size() == 0) {
+					refill();
+				}
 				string out = composeSENDMessage('d', whiteDeck[whiteDeck.size()-1]);
 				players[players.size()-1].addCard(whiteDeck[whiteDeck.size()-1]);
 				whiteDeck.pop_back();
@@ -221,15 +224,15 @@ int main(int argc, char *argv[]) {
 					exit(1);
 				}
 			}
-
+			
 			FD_SET(clientSock, &recvSockSet);
 			maxDesc = max(maxDesc, clientSock);
 		}
 		else {
-			if(players.size() > 2) {
+			if(players.size() > 3) {
 				string message;
 				switch (step % 3) {
-					// Choose judge and NOTIFY the others
+						// Choose judge and NOTIFY the others
 					case 0:
 						printf("Choosing a judge.\n");
 						players = shuffle(players, atoi(argv[1])-step);
@@ -246,15 +249,18 @@ int main(int argc, char *argv[]) {
 						
 						step++;
 						break;
-					// choose black card and POST it
+						// choose black card and POST it
 					case 1:
+						if (blackDeck.size() == 0) {
+							shutdown();
+						}
 						printf("Choosing a black card.\n");
 						blackCard = blackDeck[blackDeck.size() - 1];
 						blackDeck.pop_back();
 						
 						message = composeSENDMessage('p', blackCard);
 						for (int i = 0; i < players.size(); i++) {
-							bytesSent = send(players[i].getSocket(), (char*)message.c_str(), 200, 0);
+							bytesSent = send(players[i].getSocket(), (char*)message.c_str(), 300, 0);
 							if(bytesSent <= 0) {
 								printf("Couldn't post black card.\n");
 								exit(1);
@@ -262,7 +268,7 @@ int main(int argc, char *argv[]) {
 						}
 						step++;
 						break;
-					// Handles answers and requests
+						// Handles answers and requests
 					case 2:
 						answers.clear();
 						// Receive answers from others
@@ -310,8 +316,7 @@ int main(int argc, char *argv[]) {
 							}
 						}
 						printf("Received all of the requests from clients.\n");
-						//step++;
-						//break;
+
 						// receives winner
 						bytesRecv = 0;
 						memset(&inBuffer, 0, sizeof(inBuffer));
@@ -319,8 +324,7 @@ int main(int argc, char *argv[]) {
 							bytesRecv = recv(judge.getSocket(), (char*)&inBuffer, 100, 0);
 						}
 						parseMessage(string(inBuffer));
-						//step++;
-						//break;
+
 						// Tell everybody else
 						for (int i = 1; i < players.size(); i++) {
 							string winningMesssage = composeNOTIFYMessage('w', winner.getName());
@@ -343,33 +347,33 @@ int main(int argc, char *argv[]) {
 // Initializes the server
 // Needs the socket and port
 void initServer(int& serverSock, int port) {
-  struct sockaddr_in serverAddr;
-
-  if((serverSock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP)) < 0) {
-    printf("socket() failed\n");
-    exit(1);
-  }
-
-  int yes = 1;
-  if(setsockopt(serverSock, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int)) < 0) {
-    printf("setsockopt() failed\n");
-    exit(1);
-  }
-
-  memset(&serverAddr, 0, sizeof(serverAddr));
-  serverAddr.sin_family = AF_INET;
-  serverAddr.sin_port = htons(port);
-  serverAddr.sin_addr.s_addr = htonl(INADDR_ANY);
-
-  if(bind(serverSock, (sockaddr *)&serverAddr, sizeof(serverAddr)) < 0) {
-    printf("bind() failed\n");
-    exit(1);
-  }
-
-  if(listen(serverSock, MAXPLAYERS) < 0) {
-    printf("listen() failed\n");
-    exit(1);
-  }
+	struct sockaddr_in serverAddr;
+	
+	if((serverSock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP)) < 0) {
+		printf("socket() failed\n");
+		exit(1);
+	}
+	
+	int yes = 1;
+	if(setsockopt(serverSock, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int)) < 0) {
+		printf("setsockopt() failed\n");
+		exit(1);
+	}
+	
+	memset(&serverAddr, 0, sizeof(serverAddr));
+	serverAddr.sin_family = AF_INET;
+	serverAddr.sin_port = htons(port);
+	serverAddr.sin_addr.s_addr = htonl(INADDR_ANY);
+	
+	if(bind(serverSock, (sockaddr *)&serverAddr, sizeof(serverAddr)) < 0) {
+		printf("bind() failed\n");
+		exit(1);
+	}
+	
+	if(listen(serverSock, MAXPLAYERS) < 0) {
+		printf("listen() failed\n");
+		exit(1);
+	}
 }
 
 // counts instances of a character in a string
@@ -390,7 +394,7 @@ int parseAnswer(string message, vector<Card> &answers) {
 	splitString(messageDiv, (char*)message.c_str(), "\n");
 	splitString(getCommand, messageDiv[0], " ");
 	
-	if(strcmp((const char*)getCommand[0], "ANSWER") == 0) {
+	if(strcmp((const char*)getCommand[0], "ANSWER") == 0 || strcmp((const char*)getCommand[0], "NSWER") == 0) {
 		players[getPlayerIndex(string(getCommand[1]))].takeCard(string(messageDiv[1]));
 		answers.push_back(Card(string(messageDiv[1]), string(getCommand[1])));
 		return 1;
@@ -398,7 +402,7 @@ int parseAnswer(string message, vector<Card> &answers) {
 	else {
 		return -1;
 	}
-
+	
 }
 
 int parseMessage(string message) {
@@ -410,6 +414,9 @@ int parseMessage(string message) {
 	
 	if(strcmp((const char*)getCommand[0], "REQUEST") == 0) {
 		Player newP = getPlayer(string(getCommand[1]));
+		if (whiteDeck.size() == 0) {
+			refill();
+		}
 		string add = composeSENDMessage('d', whiteDeck[whiteDeck.size() - 1]);
 		whiteDeck.pop_back();
 		bytesSent = send(newP.getSocket(), (char*)add.c_str(), 100, 0);
@@ -426,15 +433,20 @@ int parseMessage(string message) {
 		}
 		else if(strcmp(notifyMessage[0], "quit:") == 0) {
 			Player temp = getPlayer(string(notifyMessage[1]));
+			for(int i = 0; i < temp.getHand().size(); i++) {
+				discard.push_back(temp.getHand()[i]);
+			}
 			close(temp.getSocket());
 			deletePlayer(string(notifyMessage[1]));
+			if (players.size() == 0)
+				exit(1);
 		}
 		return 1;
 	}
 	else {
 		return -1;
 	}
-
+	
 }
 
 // shuffles the elements in the deck
@@ -442,10 +454,10 @@ vector<Card> shuffle(vector<Card> deck, int seed) {
 	vector<Card> newDeck;
 	newDeck.clear();
 	
-	for (int i = 0; i < deck.size(); i+=2) {
+	for (int i = 1; i < deck.size(); i+=2) {
 		newDeck.push_back(deck[i]);
 	}
-	for (int i = 1; i < deck.size(); i+=2) {
+	for (int i = 0; i < deck.size(); i+=2) {
 		newDeck.push_back(deck[i]);
 	}
 	if(seed == 0) {
@@ -476,7 +488,7 @@ string composeSENDMessage(char type, Card cardToSend) {
 	else {
 		return "";
 	}
-
+	
 }
 
 // shuffles the elements in the deck
@@ -484,10 +496,10 @@ vector<Player> shuffle(vector<Player> deck, int seed) {
 	vector<Player> newDeck;
 	newDeck.clear();
 	
-	for (int i = 0; i < deck.size(); i+=2) {
+	for (int i = 1; i < deck.size(); i+=2) {
 		newDeck.push_back(deck[i]);
 	}
-	for (int i = 1; i < deck.size(); i+=2) {
+	for (int i = 0; i < deck.size(); i+=2) {
 		newDeck.push_back(deck[i]);
 	}
 	if (seed == 0) {
@@ -514,10 +526,25 @@ string composeNOTIFYMessage(char purpose, string playerName) {
 		s << answers.size();
 		return "NOTIFY Server\nplayers: " + s.str();
 	}
+	else if(purpose == 'q') {
+		return "NOTIFY Server\nquit: Server";
+	}
 	else {
 		return "";
 	}
+	
+}
 
+void shutdown() {
+	for (int i = 0; i < players.size(); i++) {
+		string quit = composeNOTIFYMessage('q', "");
+		bytesSent = send(players[i].getSocket(), (char*)quit.c_str(), 100, 0);
+		if(bytesSent <= 0) {
+			printf("Couldn't send quit.\n");
+			exit(1);
+		}
+	}	
+	exit(1);
 }
 
 // finds player in a the list of Players
@@ -548,9 +575,16 @@ void deletePlayer(string playerName) {
 		else {
 			delete &players[i];
 		}
-
+		
 	}
 	players = temp;
+}
+
+// refills the white deck when it runs out
+void refill() {
+	whiteDeck = discard;
+	whiteDeck = shuffle(whiteDeck, blackDeck.size());
+	discard.clear();
 }
 
 // splits the string "target" into the "parts" array by the "delim" characters
