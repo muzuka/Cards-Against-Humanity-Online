@@ -1,0 +1,65 @@
+Cards-Against-Humanity-Online README
+=============================
+
+Author: Sean Brown
+UCID: 10062604
+
+A socket implementation of Cards Against Humanity in C++ 
+
+The game of Cards Against Humanity is a funny fast-paced
+card game about answering questions or filling in blanks
+using answers provided. The players take turns being the
+judge in which they receive all of the answers and choose
+the funniest message. The owner of that message is the 
+winner of the round. This can go on forever but usually
+ends when the deck of black cards containing questions or
+statements runs out.
+
+The game process is as follows:
+
+Step 1: All of the players receive their white cards.
+Step 2: A new judge is chosen.
+Step 3: A new black card is chosen containing the new question.
+Step 4: All of the non-judge players choose an answer.
+Step 5: Answers are given to the judge.
+Step 6: The judge chooses the best one.
+Step 7: Owner of the chosen white card gets a point.
+Step 8: Return to step 2.
+
+How to setup the game:
+########################################################
+
+Prerequisites: 
+Card.h Card.cpp Player.cpp Player.h Server.cpp Client.cpp Makefile
+(text file of black cards) (text file of white cards)
+All of the above files must be in the same directory to work.
+
+Step 1: Compile the program by typing "make" into the command
+line while in the directory containing all of the required files.
+
+Step 2: There must be four players connected at once for the game
+to start so open at least five terminals that are all in the same
+directory.
+
+Step 3: Choose a terminal and start the server. The server requires
+a port number, a file name for the black deck, and a file name for
+the white deck. Type: ./Server <Port Number> <BlackDeck> <WhiteDeck>
+
+Step 4: On all of the other terminals start the clients. The client
+requires the IP address of the server and the matching port number.
+Type: ./Client <IP Address> <Port Number>
+
+Step 5: Each client will ask for a name. The name must not have spaces
+or match another client's name.
+
+Step 6: Once all of the required players have joined a judge will be
+chosen. The other players will be able to see a menu and make selections.
+The player can choose an answer, demo an answer, look at their hand, see
+their score, or quit the game.
+
+Step 7: Once all the choices have been made the judge will be able to
+see a menu and make choices. The judge can choose an answer, demo an
+answer, look at the answers, see his/her current score, or quit the game.
+
+Step 8: After the judge has chosen the next round starts. Any new players
+join as well. Go back to step 6 and repeat for the entire game.
