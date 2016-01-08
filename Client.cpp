@@ -26,19 +26,24 @@
 
 using namespace std;
 
+// flags
 bool isDone = false;
-
-Card blackCard;
-Player self;
-Player judge;
+bool isReady = false;
 bool isJudge = false;
+
+// socket stuff
+int sock;
 int bytesRecv = 0;
 int bytesSent = 0;
 char inBuffer[200];
 char outBuffer[200];
-int sock;
-string name;
 struct sockaddr_in serverAddr;
+
+// game stuff
+Card blackCard;
+Player self;
+Player judge;
+string name;
 vector<Card> answers;
 
 void printHand(vector<Card>);
@@ -53,13 +58,10 @@ void splitString(char**, char*, const char*);
 
 int main(int argc, char* argv[]) {
 	
-
-	
 	if (argc != 3) {
 		printf("Usage: %s <server IP> <Server Port>\n", argv[0]);
 		exit(1);
 	}
-	
 	
 	printf("Welcome to Cards Against Humanity Online!\n");
 	printf("Experience all of the hilarious and bad humour of the real thing.\n");
@@ -628,15 +630,10 @@ int parseMessage(string message) {
 		splitString(notifyMessage, messageDiv[1], " ");
 		if(strcmp((const char*)notifyMessage[0], "CP:") == 0) {
 			if (strcmp(self.getName().c_str(), (const char*)notifyMessage[1]) == 0) {
-				if (isJudge) {
-					answers.clear();
-					printf("You are the new judge!\n");
-				}
-				else {
-					isJudge = !isJudge;
-					judge = self;
-					printf("You are the new judge!\n");
-				}
+				isJudge = true;
+				judge = self;
+				answers.clear();
+				printf("You are the new judge!\n");
 			}
 			else {
 				if (isJudge) {
