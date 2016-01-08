@@ -2,7 +2,6 @@ Cards-Against-Humanity-Online README
 =============================
 
 Author: Sean Brown
-UCID: 10062604
 
 A socket implementation of Cards Against Humanity in C++ 
 
