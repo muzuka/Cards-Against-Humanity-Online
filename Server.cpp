@@ -37,19 +37,27 @@ const int MAXPLAYERS = 10;
 int maxDesc = 0;
 fd_set recvSockSet;
 bool terminated = false;
-
-
-Player judge, winner;
-Card blackCard;
 int bytesRecv;
 int bytesSent;
 char inBuffer[200];
 char outBuffer[200];
+
+int serverSock;
+int clientSock;
+struct sockaddr_in clientAddr;
+
+struct timeval timeout = {0, 10};
+struct timeval selectTime;
+fd_set tempRecvSockSet;
+
+Player judge, winner;
+Card blackCard;
 vector<Card> answers;
 vector<Card> discard;
 vector<Card> blackDeck;
 vector<Card> whiteDeck;
 vector<Player> players;
+int step = 0;
 
 
 void initServer(int&, int);
@@ -69,14 +77,6 @@ void splitString(char**, char*, const char*);
 
 
 int main(int argc, char *argv[]) {
-	
-	int serverSock;
-	int clientSock;
-	struct sockaddr_in clientAddr;
-	
-	struct timeval timeout = {0, 10};
-	struct timeval selectTime;
-	fd_set tempRecvSockSet;
 	
 	blackDeck.clear();
 	whiteDeck.clear();
