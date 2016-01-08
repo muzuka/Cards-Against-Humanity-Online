@@ -38,11 +38,11 @@ int maxDesc = 0;
 fd_set recvSockSet;
 bool terminated = false;
 
-int step = 0;
+
 Player judge, winner;
 Card blackCard;
-int bytesRecv = 0;
-int bytesSent = 0;
+int bytesRecv;
+int bytesSent;
 char inBuffer[200];
 char outBuffer[200];
 vector<Card> answers;
@@ -388,6 +388,7 @@ int countChars(string l, char s) {
 	return elements;
 }
 
+// Parses ANSWER message
 int parseAnswer(string message, vector<Card> &answers) {
 	char* messageDiv[2]; // [0] has first half, [1] has content
 	char* getCommand[2]; // [0] has command, [1] has source

@@ -36,6 +36,9 @@ int bytesRecv = 0;
 int bytesSent = 0;
 char inBuffer[200];
 char outBuffer[200];
+int sock;
+string name;
+struct sockaddr_in serverAddr;
 vector<Card> answers;
 
 void printHand(vector<Card>);
@@ -50,15 +53,14 @@ void splitString(char**, char*, const char*);
 
 int main(int argc, char* argv[]) {
 	
-	int sock;
-	struct sockaddr_in serverAddr;
+
 	
 	if (argc != 3) {
 		printf("Usage: %s <server IP> <Server Port>\n", argv[0]);
 		exit(1);
 	}
 	
-	string name;
+	
 	printf("Welcome to Cards Against Humanity Online!\n");
 	printf("Experience all of the hilarious and bad humour of the real thing.\n");
 	printf("What do you want as a username(Must be unique and have no spaces):\n");
