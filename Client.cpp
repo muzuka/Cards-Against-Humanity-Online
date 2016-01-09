@@ -49,6 +49,8 @@ vector<Card> answers;
 void printHand(vector<Card>);
 void printAnswers(vector<Card>, int);
 int parseMessage(string);
+int parseNotify(char*[]);
+void setJudge(bool, string);
 string composeSENDMessage(char, Card);
 string composeREQUESTMessage();
 string composeNOTIFYMessage(char, string);
@@ -628,53 +630,54 @@ int parseMessage(string message) {
 	}
 	else if(strcmp((const char*)getCommand[0], "NOTIFY") == 0) {
 		splitString(notifyMessage, messageDiv[1], " ");
-		if(strcmp((const char*)notifyMessage[0], "CP:") == 0) {
-			if (strcmp(self.getName().c_str(), (const char*)notifyMessage[1]) == 0) {
-				isJudge = true;
-				judge = self;
-				answers.clear();
-				printf("You are the new judge!\n");
-			}
-			else {
-				if (isJudge) {
-					isJudge = !isJudge;
-					judge.setName(string(notifyMessage[1]));
-					answers.clear();
-					printf("The new judge is %s.\n", notifyMessage[1]);
-				}
-				else {
-					judge.setName(string(notifyMessage[1]));
-					printf("The new judge is %s.\n", notifyMessage[1]);
-				}
-			}
-			
-		}
-		else if(strcmp((const char*)notifyMessage[0], "winner:") == 0) {
-			if(strcmp(self.getName().c_str(), (const char*)notifyMessage[1]) == 0) {
-				printf("You have won this round!\n");
-				self.addPoint();
-			}
-		}
-		else if(strcmp((const char*)notifyMessage[0], "players:") == 0) {
-			printf("Receiving %d answers from %s.\n", atoi(notifyMessage[1]), notifyMessage[1]);
-			if (atoi(notifyMessage[1]) == 0) {
-				printf("No more players.\nQuitting now.\n");
-				exit(1);
-			}
-			return atoi(notifyMessage[1]);
-		}
-		else if(strcmp((const char*)notifyMessage[0], "quit:") == 0) {
-			exit(1);
-		}
-		else {
-			return -1;
-		}
-		return 1;
+		return parseNotify(notifyMessage);
 	}
 	else {
 		return -1;
 	}
 	
+}
+
+int parseNotify(char* notifyMessage[]) {
+	if(strcmp((const char*)notifyMessage[0], "CP:") == 0) {
+		setJudge(strcmp(self.getName().c_str(), (const char*)notifyMessage[1]) == 0, string(notifyMessage[1]));
+	}
+	else if(strcmp((const char*)notifyMessage[0], "winner:") == 0) {
+		if(strcmp(self.getName().c_str(), (const char*)notifyMessage[1]) == 0) {
+			printf("You have won this round!\n");
+			self.addPoint();
+		}
+	}
+	else if(strcmp((const char*)notifyMessage[0], "players:") == 0) {
+		printf("Receiving %d answers from %s.\n", atoi(notifyMessage[1]), notifyMessage[1]);
+		if (atoi(notifyMessage[1]) == 0) {
+			printf("No more players.\nQuitting now.\n");
+			exit(1);
+		}
+		return atoi(notifyMessage[1]);
+	}
+	else if(strcmp((const char*)notifyMessage[0], "quit:") == 0) {
+		exit(1);
+	}
+	else {
+		return -1;
+	}
+	return 1;
+}
+
+void setJudge(bool j, string name) {
+	if (j) {
+		isJudge = true;
+		judge = self;
+		answers.clear();
+		printf("You are the new judge!\n");
+	}
+	else {
+		isJudge = false;
+		judge.setName(name);
+		answers.clear();
+		printf("The new judge is %s.\n", name.c_str());
+	}
 }
 
 // composes a message to send, made of the card and source
