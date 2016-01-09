@@ -56,7 +56,7 @@ string chosen;
 string note;
 
 void processInput();
-void handleInput();
+void getInput();
 void printHand(vector<Card>);
 void printAnswers(vector<Card>, int);
 int parseMessage(string);
@@ -73,7 +73,7 @@ int main(int argc, char* argv[]) {
 	
 	if (argc != 3) {
 		printf("Usage: %s <server IP> <Server Port>\n", argv[0]);
-		exit(1);
+		exit(EXIT_FAILURE);
 	}
 	
 	printf("Welcome to Cards Against Humanity Online!\n");
@@ -85,14 +85,14 @@ int main(int argc, char* argv[]) {
 	
 	if ((sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP)) < 0) {
 		printf("socket() failed\n");
-		exit(1);
+		exit(EXIT_FAILURE);
 	}
 	self.setSocket(sock);
 	
 	int yes = 1;
 	if (setsockopt(self.getSocket(), SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int)) < 0) {
 		printf("setsockopt() failed\n");
-		exit(1);
+		exit(EXIT_FAILURE);
 	}
 	
 	memset(&serverAddr, 0, sizeof(serverAddr));
@@ -103,14 +103,14 @@ int main(int argc, char* argv[]) {
 	printf("Connecting to server.\n");
 	if (connect(self.getSocket(), (struct sockaddr*) &serverAddr, sizeof(serverAddr)) < 0) {
 		printf("connect() failed\n");
-		exit(1);
+		exit(EXIT_FAILURE);
 	}
 	printf("Connected to Server successfully.\n");
 
 	bytesSent = send(self.getSocket(), self.getName().c_str(), self.getName().length(), 0);
 	if (bytesSent <= 0) {
 		printf("Couldn't send name.\n");
-		exit(1);
+		exit(EXIT_FAILURE);
 	}
 	
 	// while sent name isn't available
@@ -132,7 +132,7 @@ int main(int argc, char* argv[]) {
 			bytesSent = send(self.getSocket(), self.getName().c_str(), self.getName().length(), 0);
 			if (bytesSent <= 0) {
 				printf("Couldn't send name.\n");
-				exit(1);
+				exit(EXIT_FAILURE);
 			}
 		}
 		
@@ -234,9 +234,9 @@ int main(int argc, char* argv[]) {
 				bytesSent = send(self.getSocket(), (char*)note.c_str(), 100, 0);
 				if (bytesSent <= 0) {
 					printf("Couldn't send quit.\n");
-					exit(1);
+					exit(EXIT_FAILURE);
 				}
-				exit(1);
+				exit(EXIT_FAILURE);
 			}
 			else if (answer == 'h') {
 				printAnswers(answers, blackCard.numOfAnswers);
@@ -258,7 +258,7 @@ int main(int argc, char* argv[]) {
 						bytesSent = send(self.getSocket(), (char*)chosen.c_str(), 100, 0);
 						if (bytesSent <= 0) {
 							printf("Couldn't send NOTIFY.\n");
-							exit(1);
+							exit(EXIT_FAILURE);
 						}
 						printf("Sent winner to server.\n");
 						ready = !ready;
@@ -303,9 +303,9 @@ int main(int argc, char* argv[]) {
 						bytesSent = send(self.getSocket(), (char*)note.c_str(), 100, 0);
 						if (bytesSent <= 0) {
 							printf("Couldn't send quit.\n");
-							exit(1);
+							exit(EXIT_FAILURE);
 						}
-						exit(1);
+						exit(EXIT_FAILURE);
 					}
 					else if (answer == 'h') {
 						printAnswers(answers, blackCard.numOfAnswers);
@@ -321,20 +321,18 @@ int main(int argc, char* argv[]) {
 		}
 		// Non-Judge Code---------------------------------------------------
 		else {
-			handleInput();
 			
 			// Make a choice
 			while (!inputValid) {
+				getInput();
 				processInput();
-				
-				handleInput();
 			}
 			
 			for (int i = 0; i < blackCard.numOfAnswers; i++) {
 				bytesSent = send(self.getSocket(), (char*)composeREQUESTMessage().c_str(), 100, 0);
 				if (bytesSent <= 0) {
 					printf("Couldn't send request.\n");
-					exit(1);
+					exit(EXIT_FAILURE);
 				}
 			}
 			
@@ -401,14 +399,14 @@ void processInput() {
 			bytesSent = send(self.getSocket(), (char*)messageAnswer.c_str(), 100, 1);
 			if (bytesSent <= 0) {
 				printf("Couldn't send answer.\n");
-				exit(1);
+				exit(EXIT_FAILURE);
 			}
 		}
 		inputValid = true;
 	}
 }
 
-void handleInput() {
+void getInput() {
 	switch (blackCard.numOfAnswers) {
 		case 1:
 			printf("This black card requires one  white card.\n");
@@ -420,9 +418,8 @@ void handleInput() {
 				bytesSent = send(self.getSocket(), (char*)note.c_str(), 100, 0);
 				if (bytesSent <= 0) {
 					printf("Couldn't send quit.\n");
-					exit(1);
 				}
-				exit(1);
+				exit(EXIT_FAILURE);
 			}
 			else if(answer == 'h') {
 				printHand(self.getHand());
@@ -447,9 +444,9 @@ void handleInput() {
 				bytesSent = send(self.getSocket(), (char*)note.c_str(), 100, 0);
 				if (bytesSent <= 0) {
 					printf("Couldn't send quit.\n");
-					exit(1);
+					exit(EXIT_FAILURE);
 				}
-				exit(1);
+				exit(EXIT_FAILURE);
 			}
 			else if(answer == 'h') {
 				printHand(self.getHand());
@@ -475,9 +472,9 @@ void handleInput() {
 				bytesSent = send(self.getSocket(), (char*)note.c_str(), 100, 0);
 				if (bytesSent <= 0) {
 					printf("Couldn't send quit.\n");
-					exit(1);
+					exit(EXIT_FAILURE);
 				}
-				exit(1);
+				exit(EXIT_FAILURE);
 			}
 			else if(answer == 'h') {
 				printHand(self.getHand());
@@ -572,12 +569,12 @@ int parseNotify(char* notifyMessage[]) {
 		printf("Receiving %d answers from %s.\n", atoi(notifyMessage[1]), notifyMessage[1]);
 		if (atoi(notifyMessage[1]) == 0) {
 			printf("No more players.\nQuitting now.\n");
-			exit(1);
+			exit(EXIT_FAILURE);
 		}
 		return atoi(notifyMessage[1]);
 	}
 	else if(strcmp((const char*)notifyMessage[0], "quit:") == 0) {
-		exit(1);
+		exit(EXIT_FAILURE);
 	}
 	else {
 		return -1;
