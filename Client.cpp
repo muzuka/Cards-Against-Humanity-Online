@@ -27,8 +27,8 @@
 using namespace std;
 
 // flags
-bool good = false;
-bool isDone = false;
+bool inputValid = false;
+bool running = true;
 bool ready = false;
 bool isReady = false;
 bool isJudge = false;
@@ -55,6 +55,8 @@ string testAnswer;
 string chosen;
 string note;
 
+void processInput();
+void handleInput();
 void printHand(vector<Card>);
 void printAnswers(vector<Card>, int);
 int parseMessage(string);
@@ -154,7 +156,7 @@ int main(int argc, char* argv[]) {
 		printHand(self.getHand());
 	}
 	// Start main loop
-	while(!isDone) {
+	while(running) {
 		
 		printf("A new round has begun!\n");
 		
@@ -319,225 +321,13 @@ int main(int argc, char* argv[]) {
 		}
 		// Non-Judge Code---------------------------------------------------
 		else {
-			switch (blackCard.numOfAnswers) {
-				case 1:
-					printf("This black card requires one white card.\n");
-					printf("Please enter your answer in this form:\na # to send answer.\nt # to test the answer.\n");
-					printf("s to see score.\nb to see black card\nh to see hand.\nq to quit.\n");
-					cin >> answer;
-					if (answer == 'q') {
-						note = composeNOTIFYMessage('q', self.getName());
-						bytesSent = send(self.getSocket(), (char*)note.c_str(), 100, 0);
-						if (bytesSent <= 0) {
-							printf("Couldn't send quit.\n");
-							exit(1);
-						}
-						exit(1);
-					}
-					else if(answer == 'h') {
-						printHand(self.getHand());
-					}
-					else if(answer == 's') {
-						printf("You have won %d rounds.\n", self.getScore());
-					}
-					else if(answer == 'b') {
-						printf("%s\n", blackCard.content.c_str());
-					}
-					else {
-						cin >> num[0];
-					}
-					break;
-				case 2:
-					printf("This black card requires two white cards.\n");
-					printf("Please enter your answer in this form:\na # # to send answer.\nt # # to test the answer");
-					printf("s to see score.\nb to see black card\nh to see hand.\nq to quit.\n");
-					cin >> answer;
-					if (answer == 'q') {
-						note = composeNOTIFYMessage('q', self.getName());
-						bytesSent = send(self.getSocket(), (char*)note.c_str(), 100, 0);
-						if (bytesSent <= 0) {
-							printf("Couldn't send quit.\n");
-							exit(1);
-						}
-						exit(1);
-					}
-					else if(answer == 'h') {
-						printHand(self.getHand());
-					}
-					else if(answer == 's') {
-						printf("You have won %d rounds.\n", self.getScore());
-					}
-					else if(answer == 'b') {
-						printf("%s\n", blackCard.content.c_str());
-					}
-					else {
-						cin >> num[0];
-						cin >> num[1];
-					}
-					break;
-				case 3:
-					printf("This black card requires three white cards.\n");
-					printf("Please enter your answer in this form:\na # # # to send answer.\nt # # # to test the answer");
-					printf("s to see score.\nb to see black card\nh to see hand.\nq to quit.\n");
-					cin >> answer;
-					if (answer == 'q') {
-						note = composeNOTIFYMessage('q', self.getName());
-						bytesSent = send(self.getSocket(), (char*)note.c_str(), 100, 0);
-						if (bytesSent <= 0) {
-							printf("Couldn't send quit.\n");
-							exit(1);
-						}
-						exit(1);
-					}
-					else if(answer == 'h') {
-						printHand(self.getHand());
-					}
-					else if(answer == 's') {
-						printf("You have won %d rounds.\n", self.getScore());
-					}
-					else if(answer == 'b') {
-						printf("%s\n", blackCard.content.c_str());
-					}
-					else {
-						cin >> num[0];
-						cin >> num[1];
-						cin >> num[2];
-					}
-					break;
-				default:
-					printf("%d\n", blackCard.numOfAnswers);
-					break;
-			}
+			handleInput();
 			
 			// Make a choice
-			while (!good) {
-				if (answer == 't') {
-					switch (blackCard.numOfAnswers) {
-						case 1:
-							ans[0] = self.getHand()[num[0] - 1].content;
-							testAnswer = substitute(blackCard.content, ans, '_');
-							printf("%s\n", testAnswer.c_str());
-							break;
-						case 2:
-							ans[0] = self.getHand()[num[0] - 1].content;
-							ans[1] = self.getHand()[num[1] - 1].content;
-							testAnswer = substitute(blackCard.content, ans, '_');
-							printf("%s\n", testAnswer.c_str());
-							break;
-						case 3:
-							ans[0] = self.getHand()[num[0] - 1].content;
-							ans[1] = self.getHand()[num[1] - 1].content;
-							ans[2] = self.getHand()[num[2] - 1].content;
-							testAnswer = substitute(blackCard.content, ans, '_');
-							printf("%s\n", testAnswer.c_str());
-							break;
-						default:
-							break;
-					}
-				}
-				else if(answer == 'a') {
-					for (int i = 0; i < blackCard.numOfAnswers; i++) {
-						string messageAnswer = composeSENDMessage('n', self.takeCard(num[i]-1));
-						bytesSent = send(self.getSocket(), (char*)messageAnswer.c_str(), 100, 1);
-						if (bytesSent <= 0) {
-							printf("Couldn't send answer.\n");
-							exit(1);
-						}
-					}
-					break;
-				}
-				else if (answer == 'q' || answer == 'h' || answer == 's') {
-					
-				}
+			while (!inputValid) {
+				processInput();
 				
-				switch (blackCard.numOfAnswers) {
-					case 1:
-						printf("This black card requires one  white card.\n");
-						printf("Please enter your answer in this form:\na # to send answer.\nt # to test the answer.\n");
-						printf("s to see score.\nb to see black card\nh to see hand.\nq to quit.\n");
-						cin >> answer;
-						if (answer == 'q') {
-							note = composeNOTIFYMessage('q', self.getName());
-							bytesSent = send(self.getSocket(), (char*)note.c_str(), 100, 0);
-							if (bytesSent <= 0) {
-								printf("Couldn't send quit.\n");
-								exit(1);
-							}
-							exit(1);
-						}
-						else if(answer == 'h') {
-							printHand(self.getHand());
-						}
-						else if(answer == 's') {
-							printf("You have won %d rounds.\n", self.getScore());
-						}
-						else if(answer == 'b') {
-							printf("%s\n", blackCard.content.c_str());
-						}
-						else {
-							cin >> num[0];
-						}
-						break;
-					case 2:
-						printf("This black card requires two white cards.\n");
-						printf("Please enter your answer in this form:\na # # to send answer.\nt # # to test the answer");
-						printf("s to see score.\nb to see black card\nh to see hand.\nq to quit.\n");
-						cin >> answer;
-						if (answer == 'q') {
-							note = composeNOTIFYMessage('q', self.getName());
-							bytesSent = send(self.getSocket(), (char*)note.c_str(), 100, 0);
-							if (bytesSent <= 0) {
-								printf("Couldn't send quit.\n");
-								exit(1);
-							}
-							exit(1);
-						}
-						else if(answer == 'h') {
-							printHand(self.getHand());
-						}
-						else if(answer == 's') {
-							printf("You have won %d rounds.\n", self.getScore());
-						}
-						else if(answer == 'b') {
-							printf("%s\n", blackCard.content.c_str());
-						}
-						else {
-							cin >> num[0];
-							cin >> num[1];
-						}
-						break;
-					case 3:
-						printf("This black card requires three white cards.\n");
-						printf("Please enter your answer in this form:\na # # # to send answer.\nt # # # to test the answer");
-						printf("s to see score.\nb to see black card\nh to see hand.\nq to quit.\n");
-						cin >> answer;
-						if (answer == 'q') {
-							note = composeNOTIFYMessage('q', self.getName());
-							bytesSent = send(self.getSocket(), (char*)note.c_str(), 100, 0);
-							if (bytesSent <= 0) {
-								printf("Couldn't send quit.\n");
-								exit(1);
-							}
-							exit(1);
-						}
-						else if(answer == 'h') {
-							printHand(self.getHand());
-						}
-						else if(answer == 's') {
-							printf("You have won %d rounds.\n", self.getScore());
-						}
-						else if(answer == 'b') {
-							printf("%s\n", blackCard.content.c_str());
-						}
-						else {
-							cin >> num[0];
-							cin >> num[1];
-							cin >> num[2];
-						}
-						break;
-					default:
-						break;
-				}
+				handleInput();
 			}
 			
 			for (int i = 0; i < blackCard.numOfAnswers; i++) {
@@ -577,6 +367,135 @@ int main(int argc, char* argv[]) {
 				}
 			}
 		}
+	}
+}
+
+void processInput() {
+	if (answer == 't') {
+		switch (blackCard.numOfAnswers) {
+			case 1:
+				ans[0] = self.getHand()[num[0] - 1].content;
+				testAnswer = substitute(blackCard.content, ans, '_');
+				printf("%s\n", testAnswer.c_str());
+				break;
+			case 2:
+				ans[0] = self.getHand()[num[0] - 1].content;
+				ans[1] = self.getHand()[num[1] - 1].content;
+				testAnswer = substitute(blackCard.content, ans, '_');
+				printf("%s\n", testAnswer.c_str());
+				break;
+			case 3:
+				ans[0] = self.getHand()[num[0] - 1].content;
+				ans[1] = self.getHand()[num[1] - 1].content;
+				ans[2] = self.getHand()[num[2] - 1].content;
+				testAnswer = substitute(blackCard.content, ans, '_');
+				printf("%s\n", testAnswer.c_str());
+				break;
+			default:
+				break;
+		}
+	}
+	else if(answer == 'a') {
+		for (int i = 0; i < blackCard.numOfAnswers; i++) {
+			string messageAnswer = composeSENDMessage('n', self.takeCard(num[i]-1));
+			bytesSent = send(self.getSocket(), (char*)messageAnswer.c_str(), 100, 1);
+			if (bytesSent <= 0) {
+				printf("Couldn't send answer.\n");
+				exit(1);
+			}
+		}
+		inputValid = true;
+	}
+}
+
+void handleInput() {
+	switch (blackCard.numOfAnswers) {
+		case 1:
+			printf("This black card requires one  white card.\n");
+			printf("Please enter your answer in this form:\na # to send answer.\nt # to test the answer.\n");
+			printf("s to see score.\nb to see black card\nh to see hand.\nq to quit.\n");
+			cin >> answer;
+			if (answer == 'q') {
+				note = composeNOTIFYMessage('q', self.getName());
+				bytesSent = send(self.getSocket(), (char*)note.c_str(), 100, 0);
+				if (bytesSent <= 0) {
+					printf("Couldn't send quit.\n");
+					exit(1);
+				}
+				exit(1);
+			}
+			else if(answer == 'h') {
+				printHand(self.getHand());
+			}
+			else if(answer == 's') {
+				printf("You have won %d rounds.\n", self.getScore());
+			}
+			else if(answer == 'b') {
+				printf("%s\n", blackCard.content.c_str());
+			}
+			else {
+				cin >> num[0];
+			}
+			break;
+		case 2:
+			printf("This black card requires two white cards.\n");
+			printf("Please enter your answer in this form:\na # # to send answer.\nt # # to test the answer");
+			printf("s to see score.\nb to see black card\nh to see hand.\nq to quit.\n");
+			cin >> answer;
+			if (answer == 'q') {
+				note = composeNOTIFYMessage('q', self.getName());
+				bytesSent = send(self.getSocket(), (char*)note.c_str(), 100, 0);
+				if (bytesSent <= 0) {
+					printf("Couldn't send quit.\n");
+					exit(1);
+				}
+				exit(1);
+			}
+			else if(answer == 'h') {
+				printHand(self.getHand());
+			}
+			else if(answer == 's') {
+				printf("You have won %d rounds.\n", self.getScore());
+			}
+			else if(answer == 'b') {
+				printf("%s\n", blackCard.content.c_str());
+			}
+			else {
+				cin >> num[0];
+				cin >> num[1];
+			}
+			break;
+		case 3:
+			printf("This black card requires three white cards.\n");
+			printf("Please enter your answer in this form:\na # # # to send answer.\nt # # # to test the answer");
+			printf("s to see score.\nb to see black card\nh to see hand.\nq to quit.\n");
+			cin >> answer;
+			if (answer == 'q') {
+				note = composeNOTIFYMessage('q', self.getName());
+				bytesSent = send(self.getSocket(), (char*)note.c_str(), 100, 0);
+				if (bytesSent <= 0) {
+					printf("Couldn't send quit.\n");
+					exit(1);
+				}
+				exit(1);
+			}
+			else if(answer == 'h') {
+				printHand(self.getHand());
+			}
+			else if(answer == 's') {
+				printf("You have won %d rounds.\n", self.getScore());
+			}
+			else if(answer == 'b') {
+				printf("%s\n", blackCard.content.c_str());
+			}
+			else {
+				cin >> num[0];
+				cin >> num[1];
+				cin >> num[2];
+			}
+			break;
+		default:
+			break;
 	}
 }
 
