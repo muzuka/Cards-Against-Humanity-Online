@@ -27,7 +27,9 @@
 using namespace std;
 
 // flags
+bool good = false;
 bool isDone = false;
+bool ready = false;
 bool isReady = false;
 bool isJudge = false;
 
@@ -45,6 +47,13 @@ Player self;
 Player judge;
 string name;
 vector<Card> answers;
+
+string ans[3];
+int num[3];
+char answer;
+string testAnswer;
+string chosen;
+string note;
 
 void printHand(vector<Card>);
 void printAnswers(vector<Card>, int);
@@ -95,7 +104,7 @@ int main(int argc, char* argv[]) {
 		exit(1);
 	}
 	printf("Connected to Server successfully.\n");
-	bool isReady = false;
+
 	bytesSent = send(self.getSocket(), self.getName().c_str(), self.getName().length(), 0);
 	if (bytesSent <= 0) {
 		printf("Couldn't send name.\n");
@@ -177,11 +186,6 @@ int main(int argc, char* argv[]) {
 			}
 		}
 		
-		string ans[3];
-		int num[3];
-		char answer;
-		string testAnswer;
-		
 		// Judge Code --------------------------------------
 		if(isJudge) {
 			printf("Please wait for the others' answers.\n");
@@ -222,7 +226,6 @@ int main(int argc, char* argv[]) {
 			printf("Please select the best answer:\nCommands:\n");
 			printf("a # to send answer.\nt # to test answer.\nh to see choices.\ns to see score.\nq to quit.\n");
 			
-			string chosen, note;
 			cin >> answer;
 			if (answer == 'q') {
 				note = composeNOTIFYMessage('q', self.getName());
@@ -242,7 +245,6 @@ int main(int argc, char* argv[]) {
 			else {
 				cin >> num[0];
 			}
-			bool ready = false;
 			while (!ready) {
 				switch (answer) {
 					case 'a':
@@ -317,7 +319,6 @@ int main(int argc, char* argv[]) {
 		}
 		// Non-Judge Code---------------------------------------------------
 		else {
-			bool good = false;
 			switch (blackCard.numOfAnswers) {
 				case 1:
 					printf("This black card requires one white card.\n");
@@ -325,7 +326,7 @@ int main(int argc, char* argv[]) {
 					printf("s to see score.\nb to see black card\nh to see hand.\nq to quit.\n");
 					cin >> answer;
 					if (answer == 'q') {
-						string note = composeNOTIFYMessage('q', self.getName());
+						note = composeNOTIFYMessage('q', self.getName());
 						bytesSent = send(self.getSocket(), (char*)note.c_str(), 100, 0);
 						if (bytesSent <= 0) {
 							printf("Couldn't send quit.\n");
@@ -352,7 +353,7 @@ int main(int argc, char* argv[]) {
 					printf("s to see score.\nb to see black card\nh to see hand.\nq to quit.\n");
 					cin >> answer;
 					if (answer == 'q') {
-						string note = composeNOTIFYMessage('q', self.getName());
+						note = composeNOTIFYMessage('q', self.getName());
 						bytesSent = send(self.getSocket(), (char*)note.c_str(), 100, 0);
 						if (bytesSent <= 0) {
 							printf("Couldn't send quit.\n");
@@ -380,7 +381,7 @@ int main(int argc, char* argv[]) {
 					printf("s to see score.\nb to see black card\nh to see hand.\nq to quit.\n");
 					cin >> answer;
 					if (answer == 'q') {
-						string note = composeNOTIFYMessage('q', self.getName());
+						note = composeNOTIFYMessage('q', self.getName());
 						bytesSent = send(self.getSocket(), (char*)note.c_str(), 100, 0);
 						if (bytesSent <= 0) {
 							printf("Couldn't send quit.\n");
@@ -456,7 +457,7 @@ int main(int argc, char* argv[]) {
 						printf("s to see score.\nb to see black card\nh to see hand.\nq to quit.\n");
 						cin >> answer;
 						if (answer == 'q') {
-							string note = composeNOTIFYMessage('q', self.getName());
+							note = composeNOTIFYMessage('q', self.getName());
 							bytesSent = send(self.getSocket(), (char*)note.c_str(), 100, 0);
 							if (bytesSent <= 0) {
 								printf("Couldn't send quit.\n");
@@ -483,7 +484,7 @@ int main(int argc, char* argv[]) {
 						printf("s to see score.\nb to see black card\nh to see hand.\nq to quit.\n");
 						cin >> answer;
 						if (answer == 'q') {
-							string note = composeNOTIFYMessage('q', self.getName());
+							note = composeNOTIFYMessage('q', self.getName());
 							bytesSent = send(self.getSocket(), (char*)note.c_str(), 100, 0);
 							if (bytesSent <= 0) {
 								printf("Couldn't send quit.\n");
@@ -511,7 +512,7 @@ int main(int argc, char* argv[]) {
 						printf("s to see score.\nb to see black card\nh to see hand.\nq to quit.\n");
 						cin >> answer;
 						if (answer == 'q') {
-							string note = composeNOTIFYMessage('q', self.getName());
+							note = composeNOTIFYMessage('q', self.getName());
 							bytesSent = send(self.getSocket(), (char*)note.c_str(), 100, 0);
 							if (bytesSent <= 0) {
 								printf("Couldn't send quit.\n");
